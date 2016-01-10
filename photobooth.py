@@ -64,7 +64,15 @@ class PhotoPreview(pygame.sprite.Sprite):
 
         # drawing
         pygame.draw.rect(self.image, (0,255,0), (0,0,PhotoPreview.WIDTH,PhotoPreview.HEIGHT),1)
-        #TODO: draw (number + 1)
+        self.draw_number(self.number + 1)
+
+
+    def draw_number(self, num):
+        """ draws number in the middle of the image """
+        font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
+        fw, fh = font.size(str(num))
+        surface = font.render(str(num), True, self.conf.font_color)
+        self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
 
 class PygView(object):
     """
@@ -80,12 +88,13 @@ class PygView(object):
         self.controller = controller
         self.fps = self.conf.fps
 
-        # create drawing components
-        self.previews_group = pygame.sprite.Group()
-        for num in xrange(4):
-            PhotoPreview(self.previews_group, num, conf)
-
         pygame.init()
+
+        # create drawing components
+        self.allgroup = pygame.sprite.Group()
+        for num in xrange(4):
+            PhotoPreview(self.allgroup, num, conf)
+
         pygame.mouse.set_visible(False)
 
         self.clock = pygame.time.Clock()
@@ -134,7 +143,7 @@ class PygView(object):
         while running:
             self.clock.tick_busy_loop(self.fps)
             running = self.controller.dispatch(self.get_events())
-            self.previews_group.draw(self.canvas)
+            self.allgroup.draw(self.canvas)
             self.flip()
         else:
             self.quit()
