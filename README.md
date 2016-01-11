@@ -20,12 +20,13 @@ Specific commands are for ubuntu/debian based systems.
   ```bash
   ~$ sudo apt-get install libgphoto2-6
   ```
+
 ## Configuration
 TODO
 For now configuration is hardcoded at the beginning of photobooth.py or provided as commandline params (see usage).
 
 ## Running
-1. gPhoto2 Live view demo:
+1. gPhoto2 Live view demo (for testing if Your camera works with gPhoto2)
   ```bash
   ~$ ./preview.py
   ```
