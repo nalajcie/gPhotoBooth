@@ -30,6 +30,7 @@ For now configuration is hardcoded at the beginning of photobooth.py or provided
   ```bash
   ~$ ./preview.py
   ```
+
 2. Photobooth application
   ```bash
   ~$ ./photobooth.py .
