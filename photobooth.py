@@ -371,4 +371,5 @@ if __name__ == '__main__':
         camera.close()
         sys.exit(-1)
     finally:
+        camera.close()
         logger.info("Finished successfully!")
