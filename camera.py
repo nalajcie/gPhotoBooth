@@ -1,6 +1,8 @@
 from local_modules import piggyphoto
 from StringIO import StringIO
 
+import pygame
+
 class GPhotoCamera():
     def __init__(self):
         self.cam = piggyphoto.Camera()
