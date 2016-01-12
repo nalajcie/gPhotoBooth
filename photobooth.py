@@ -32,10 +32,11 @@ default_config = {
     'screen_width': 1280,
     'screen_height': 800,
     'fullscreen': 0,
-    'fps': 10,
+    'fps': 30,
 
     # controller-related vars
     'save_path': '.',
+    'flip_preview': True,
 
     # whole screen drawing-related consts
     'font_color': (210, 210, 210),
@@ -65,18 +66,30 @@ class LiveView(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.topleft = (self.conf.left_margin, self.conf.top_margin)
         self.image.convert()
+        self.stop()
 
-        # drawing
-        pygame.draw.rect(self.image, (255,0,0), (0, 0, LiveView.WIDTH, LiveView.HEIGHT),1)
 
     def draw_image(self, image):
         """ starts displaying image instead of empty rect """
         scalled = pygame.transform.scale(image, (LiveView.WIDTH, LiveView.HEIGHT))
+        if self.conf.flip_preview:
+            scalled = pygame.transform.flip(scalled, True, False)
         self.image.blit((scalled), (0, 0))
+
+    def start(self):
+        self.is_started = True
+
+    def stop(self):
+        self.is_started = False
+
+        # draw empty rect
+        pygame.draw.rect(self.image, (255,0,0), (0, 0, LiveView.WIDTH, LiveView.HEIGHT),1)
 
     def update(self):
         #TODO: capture preview in other thread
-        self.draw_image(camera.capture_preview())
+        if (self.is_started):
+            self.draw_image(camera.capture_preview())
+
 
 
 class PhotoPreview(pygame.sprite.Sprite):
@@ -115,18 +128,12 @@ class PygView(object):
     Main view which handles all of the rendering
     """
 
-    QUIT_KEYS = pygame.K_ESCAPE, pygame.K_q
-    BUTTON_KEY= pygame.K_SPACE,
-
     def __init__(self, controller, conf, camera):
         self.conf = conf
         self.controller = controller
-        self.fps = self.conf.fps
 
         pygame.init()
         pygame.mouse.set_visible(False)
-
-        self.clock = pygame.time.Clock()
 
         # TODO:
         # self.add_button_listener()
@@ -148,10 +155,10 @@ class PygView(object):
         surface = self.font.render(text, True, self.font_color)
         self.canvas.blit(surface, ((self.width - fw) // 2, (self.height - fh) // 2))
 
-    def render_text_centred(self, *text_lines):
+    def render_text_centered(self, *text_lines):
         location = self.canvas.get_rect()
         rendered_lines = [self.font.render(text, True, self.conf.font_color) for text in text_lines]
-        line_height = font.get_linesize()
+        line_height = self.font.get_linesize()
         middle_line = len(text_lines) / 2.0 - 0.5
 
         for i, line in enumerate(rendered_lines):
@@ -159,82 +166,51 @@ class PygView(object):
             lines_to_shift = i - middle_line
             line_pos.centerx = location.centerx
             line_pos.centery = location.centery + lines_to_shift * line_height
-            self.main_surface.blit(line, line_pos)
+            self.canvas.blit(line, line_pos)
 
     def render_text_bottom(self, text, size=142):
         location = self.canvas.get_rect()
-        font = pygame.font.SysFont(pygame.font.get_default_font(), size)
         line = self.font.render(text, True, self.conf.font_color)
         line_height = font.get_linesize()
 
         line_pos = line.get_rect()
         line_pos.centerx = location.centerx
         line_pos.centery = location.height - 2 * line_height
-        self.main_surface.blit(line, line_pos)
+        self.canvas.blit(line, line_pos)
 
-    def run(self):
-        """Main loop"""
+    def update(self):
+        self.allgroup.update()
+        self.allgroup.draw(self.canvas)
+        self.flip()
 
-        running = True
-        while running:
-            self.clock.tick_busy_loop(self.fps)
-            running = self.controller.dispatch(self.get_events())
-
-            self.allgroup.update()
-            self.allgroup.draw(self.canvas)
-            self.flip()
-        else:
-            self.quit()
-
-
-    def get_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return 'quit'
-            if event.type == pygame.KEYDOWN:
-                if event.key in PygView.QUIT_KEYS:
-                    return 'quit'
-                elif event.key in PygView.BUTTON_KEY:
-                    return 'button'
-        else:
-            return None
 
     def flip(self):
         pygame.display.update()
         self.canvas.fill(self.conf.back_color)
 
 
-    def quit(self):
-        pygame.quit()
-
 
 class PhotoBoothController(object):
+
+    QUIT_KEYS = pygame.K_ESCAPE, pygame.K_q
+    BUTTON_KEY= pygame.K_SPACE,
+
     def __init__(self, camera, config):
         self.camera = camera
         self.conf = config
-        self.is_working = False
 
+        self.clock = pygame.time.Clock()
+
+        #TODO: move to Configuration
         self.count_down_time = 5
         self.image_display_time = 3
         self.montage_display_time = 15
         self.idle_time = 240
 
-        self.current_session = None
-
+        self.is_running = False
+        self.model = None
         self.view = PygView(self, self.conf, self.camera)
 
-
-    def capture_preview(self):
-        picture = self.camera.capture_preview()
-
-        if self.size:
-            picture = pygame.transform.scale(picture, self.size)
-        picture = pygame.transform.flip(picture, True, False)
-        return picture
-
-    def display_preview(self):
-        picture = self.capture_preview()
-        self.main_surface.blit(picture, (0, 0))
 
     def display_image(self, image_name):
         picture = self.load_image(image_name)
@@ -242,53 +218,57 @@ class PhotoBoothController(object):
         self.main_surface.blit(picture, (0, 0))
 
     def run(self):
-        self.view.run()
+        """Main loop"""
 
-    def dispatch(self, event):
-        """Control the game state."""
+        self.is_running = True
+        while self.is_running:
+            self.clock.tick_busy_loop(self.conf.fps)
+            button_pressed = self.process_events()
 
-        if event == 'quit':
-            #self.game.quit()
-            if self.is_working:
-                self.model.quit()
+            self.view.update()
+
+            # photo session in progress
+            if self.model:
+                self.model.update(button_pressed)
+
+            else:
+                if button_pressed:
+                    self.start_new_session()
+
+            pygame.display.set_caption("[FPS]: %.2f" % (self.clock.get_fps()))
+        else:
+            self.quit()
+
+    def quit(self):
+        if self.model:
+            self.model.quit()
+        pygame.quit()
+
+    def process_events(self):
+        """ Returns wheter "THE BUTTON" has been pressed """
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.is_running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key in PhotoBoothController.QUIT_KEYS:
+                    self.is_running = False
+                elif event.key in PhotoBoothController.BUTTON_KEY:
+                    return True
+                # TODO: add our userevent for external button
+        else:
             return False
 
-        if event == 'button':
-            if not self.is_working:
-                self.is_working = True
-                self.model = PhotoSessionModel(self)
-            else:
-                self.model.buttonPushed()
-
-        return True
+    def start_new_session(self):
+        #TODO: change view from mosaics to photobooth view
+        self.model = PhotoSessionModel(self)
 
 
-    def main_loop(self):
-        #WARN: not used for now!
-        pygame.event.clear()
-        self.clock.tick(25)
-        if len(self.events) > 10:
-            self.events = self.events[:10]
-        pygame.display.flip()
+    def start_live_view(self):
+        self.view.lv.start()
 
-        # TODO
-        button_press = self.space_pressed() #or self.button.is_pressed()
-
-        if self.current_session:
-            self.current_session.do_frame(button_press)
-            if self.current_session.idle():
-                self.current_session = None
-                self.camera.sleep()
-            elif self.current_session.finished():
-                # Start a new session
-                self.current_session = PhotoSession(self)
-        elif button_press:
-            # Start a new session
-            self.current_session = PhotoSession(self)
-        else:
-            self.wait()
-
-        return self.check_for_quit_event()
+    def set_text(self, text):
+        #TODO
+        self.view.render_text_centered(text)
 
     def wait(self):
         self.main_surface.fill((0, 0, 0))
@@ -302,20 +282,6 @@ class PhotoBoothController(object):
         if self.upload_to:
             upload_image_async(self.upload_to, file_path)
 
-    def check_key_event(self, *keys):
-        self.events += pygame.event.get(pygame.KEYUP)
-        for event in self.events:
-            if event.dict['key'] in keys:
-                self.events = []
-                return True
-        return False
-
-    def space_pressed(self):
-        return self.check_key_event(pygame.K_SPACE)
-
-    def check_for_quit_event(self):
-        return not self.check_key_event(pygame.K_q, pygame.K_ESCAPE) \
-            and not pygame.event.peek(pygame.QUIT)
 
 class SessionState(object):
     def __init__(self, model):
@@ -329,8 +295,8 @@ class WaitingState(SessionState):
         if button_pressed:
             #TODO: transition to next state
             print("TODO: next state")
-        self.session.booth.display_preview()
-        self.session.booth.render_text_centred("Push when ready!")
+        self.model.controller.start_live_view()
+        self.model.controller.set_text("Push when ready!")
         return self
 
     def next(self, button_pressed):
@@ -355,6 +321,10 @@ class PhotoSessionModel(object):
 
     def update(self, button_pressed):
         self.state = self.state.update(button_pressed)
+
+    def quit(self):
+        # any cleaning needed - put it here
+        yield
 
     def idle(self):
         return not self.capture_start and time.time() - self.session_start > self.booth.idle_time

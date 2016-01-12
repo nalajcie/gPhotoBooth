@@ -8,7 +8,7 @@ class GPhotoCamera():
         self.cam = piggyphoto.Camera()
 
     def capture_preview(self):
-        cfile = C.capture_preview()
+        cfile = self.cam.capture_preview()
         picture = pygame.image.load(StringIO(cfile.get_data()))
         cfile.clean()
         return picture
