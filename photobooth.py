@@ -336,11 +336,13 @@ class PhotoSessionModel(object):
         return self.state is None
 
 class Config(object):
-  """Change dictionary to object attributes."""
+    """Change dictionary to object attributes."""
 
-  def __init__(self, **kwargs):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
-    self.__dict__.update(kwargs)
+    def __str__(self):
+        return str(self.__dict__)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
