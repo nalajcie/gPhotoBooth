@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # enc: utf-8
 
+import os
 import sys
 import time
+import datetime
 import argparse
 import logging
 import pygame
@@ -37,6 +39,9 @@ default_config = {
     # controller-related vars
     'save_path': '.',
     'flip_preview': True,
+    'initial_countdown_secs': 3,
+    'midphoto_countdown_secs': 3,
+    'image_display_secs': 2,
 
     # whole screen drawing-related consts
     'font_color': (210, 210, 210),
@@ -70,10 +75,10 @@ class LiveView(pygame.sprite.Sprite):
         self.stop()
 
 
-    def draw_image(self, image):
+    def draw_image(self, image, flip_image):
         """ starts displaying image instead of empty rect """
         scalled = pygame.transform.scale(image, (LiveView.WIDTH, LiveView.HEIGHT))
-        if self.conf.flip_preview:
+        if flip_image:
             scalled = pygame.transform.flip(scalled, True, False)
         self.image.blit((scalled), (0, 0))
 
@@ -86,10 +91,14 @@ class LiveView(pygame.sprite.Sprite):
         # draw empty rect
         pygame.draw.rect(self.image, (255,0,0), (0, 0, LiveView.WIDTH, LiveView.HEIGHT),1)
 
+    def pause(self):
+        self.is_started = False
+        # do not overwrite with black rectangle
+
     def update(self):
         #TODO: capture preview in other thread
         if (self.is_started):
-            self.draw_image(camera.capture_preview())
+            self.draw_image(camera.capture_preview(), self.conf.flip_preview)
 
 
 
@@ -137,18 +146,23 @@ class TextBox(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = center
         self.image.convert_alpha()
+        self.current_text = [""]
 
     def update(self):
         pass
 
-    def draw_text(self, text):
-        fw, fh = self.font.size(text)
-        surface = self.font.render(text, True, self.conf.font_color)
-        self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
+    #def draw_text(self, text):
+    #    fw, fh = self.font.size(text)
+    #    surface = self.font.render(text, True, self.conf.font_color)
+    #    self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
 
-    def render_text_centered(self, *text_lines):
-        #FIXME
-        location = self.canvas.get_rect()
+    def draw_text(self, text_lines):
+        if self.current_text == text_lines:
+            return
+
+        self.current_text = text_lines
+        self.image.fill((0,0,0))
+        location = self.image.get_rect()
         rendered_lines = [self.font.render(text, True, self.conf.font_color) for text in text_lines]
         line_height = self.font.get_linesize()
         middle_line = len(text_lines) / 2.0 - 0.5
@@ -158,7 +172,7 @@ class TextBox(pygame.sprite.Sprite):
             lines_to_shift = i - middle_line
             line_pos.centerx = location.centerx
             line_pos.centery = location.centery + lines_to_shift * line_height
-            self.canvas.blit(line, line_pos)
+            self.image.blit(line, line_pos)
 
     def render_text_bottom(self, text, size=142):
         #FIXME
@@ -281,20 +295,21 @@ class PhotoBoothController(object):
     def start_live_view(self):
         self.view.lv.start()
 
-    def set_text(self, text):
-        self.view.textbox.draw_text(text)
-
-    def wait(self):
-        self.main_surface.fill((0, 0, 0))
-        self.render_text_centred('Press the button to start!')
-
+    def set_text(self, text_lines):
+        self.view.textbox.draw_text(text_lines)
 
     def capture_image(self, file_name):
-        file_path = os.path.join(self.output_dir, file_name)
+        file_path = os.path.join(self.conf.save_path, file_name)
         logger.info("Capturing image to: %s", file_path)
         self.camera.capture_image(file_path)
-        if self.upload_to:
-            upload_image_async(self.upload_to, file_path)
+        #if self.upload_to:
+        #    upload_image_async(self.upload_to, file_path)
+
+    def notify_captured_image(self, image_number):
+        #TODO: big display on LV?
+        self.view.lv.pause()
+        self.view.previews[image_number - 1].draw_image(self.model.images[image_number])
+        self.view.lv.draw_image(self.model.images[image_number], False)
 
 
 class SessionState(object):
@@ -305,18 +320,84 @@ class SessionState(object):
         raise NotImplementedError("Update not implemented")
 
 class WaitingState(SessionState):
+    def __init__(self, model):
+        super(WaitingState, self).__init__(model)
+        self.model.controller.start_live_view()
+        self.model.controller.set_text(["Push when ready!"])
+
     def update(self, button_pressed):
         if button_pressed:
-            #TODO: transition to next state
-            print("TODO: next state")
-        self.model.controller.start_live_view()
-        self.model.controller.set_text("Push when ready!")
+            self.model.capture_start = datetime.datetime.now()
+            return CountdownState(self.model, self.model.conf.initial_countdown_secs)
         return self
 
-    def next(self, button_pressed):
-        if button_pressed:
-            self.session.capture_start = datetime.datetime.now()
-            return CountdownState(self.session)
+
+class TimedState(SessionState):
+    def __init__(self, model, timer_length_s):
+        super(TimedState, self).__init__(model)
+        self.timer = time.time() + timer_length_s
+
+    def time_up(self):
+        return self.timer <= time.time()
+
+
+class CountdownState(TimedState):
+    def __init__(self, session, countdown_time):
+        super(CountdownState, self).__init__(session, countdown_time)
+        self.capture_start = datetime.datetime.now()
+
+    def update(self, button_pressed):
+        if self.time_up():
+            image = self.take_picture()
+            return ShowLastCaptureState(self.model, image)
+        else:
+            self.display_countdown()
+            return self
+
+        self.model.controller.start_live_view()
+        self.model.controller.set_text(["Push when ready!"])
+        return self
+
+    def display_countdown(self):
+        time_remaining = self.timer - time.time()
+
+        if time_remaining <= 0:
+            # TODO
+            #self.session.booth.display_camera_arrow(clear_screen=True)
+            pass
+        else:
+            lines = [u'Taking picture %d of 4 in:' %
+                     (self.model.photo_count + 1), str(int(time_remaining))]
+            if time_remaining < 2 and int(time_remaining * 2) % 2 == 1:
+                lines = ["Look at the camera!", ""] + lines
+            elif time_remaining < 2:
+                lines = ["", ""] + lines
+                #self.session.booth.display_camera_arrow()
+            else:
+                lines = ["", ""] + lines
+            self.model.controller.set_text(lines)
+
+    def take_picture(self):
+        self.model.photo_count += 1
+        image_name = self.model.get_image_name(self.model.photo_count)
+        self.model.controller.capture_image(image_name)
+        return image_name
+
+class ShowLastCaptureState(TimedState):
+    def __init__(self, model, image_name):
+        super(ShowLastCaptureState, self).__init__(model, model.conf.image_display_secs)
+        self.model.controller.set_text([])
+        self.model.set_captured_image(image_name, self.model.photo_count)
+
+    def update(self, button_pressed):
+        if self.time_up():
+            if self.model.photo_count == 4:
+                #TODO
+                return None
+                #return ShowSessionMontageState(self.model)
+            else:
+                self.model.controller.start_live_view()
+                return CountdownState(self.model, self.model.conf.midphoto_countdown_secs)
         else:
             return self
 
@@ -325,6 +406,7 @@ class PhotoSessionModel(object):
     Photo session model (holding global attributes) and state machine
     """
     def __init__(self, controller):
+        self.conf = controller.conf
         self.controller = controller
 
         # global model variables used by different states
@@ -332,6 +414,9 @@ class PhotoSessionModel(object):
         self.capture_start = None
         self.photo_count = 0
         self.session_start = time.time()
+
+        self.image_names = dict()
+        self.images = dict()
 
     def update(self, button_pressed):
         self.state = self.state.update(button_pressed)
@@ -345,6 +430,15 @@ class PhotoSessionModel(object):
 
     def get_image_name(self, count):
         return self.capture_start.strftime('%Y-%m-%d-%H%M%S') + '-' + str(count) + '.jpg'
+
+    def set_captured_image(self, image_name, image_number):
+        img = pygame.image.load(image_name)
+        img.convert()
+
+        self.image_names[image_number] = image_name
+        self.images[image_number] = img
+
+        self.controller.notify_captured_image(image_number)
 
     def finished(self):
         return self.state is None
@@ -374,10 +468,14 @@ if __name__ == '__main__':
     conf.save_path = args.save_path
     logger.info("Full configuration: %s", conf)
 
-    if args.dummy:
-        camera = DummyCamera()
-    else:
-        camera = GPhotoCamera()
+    try:
+        if args.dummy:
+            camera = DummyCamera()
+        else:
+            camera = GPhotoCamera()
+    except ValueError, e:
+        logger.exception("Camera could not be initialised, exiting!")
+        sys.exit(-1)
 
     booth = PhotoBoothController(camera, conf)
     try:
