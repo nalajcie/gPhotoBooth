@@ -59,6 +59,7 @@ class LiveView(pygame.sprite.Sprite):
     def __init__(self, group, conf, camera):
         pygame.sprite.Sprite.__init__(self, group)
         self.conf = conf
+        self._layer = 5
         self.camera = camera
 
         # surface & positioning
@@ -101,6 +102,7 @@ class PhotoPreview(pygame.sprite.Sprite):
     def __init__(self, group, number, conf):
         pygame.sprite.Sprite.__init__(self, group)
         self.conf = conf
+        self._layer = 4
         self.number = number
         # surface & positioning
         self.image = pygame.Surface((PhotoPreview.WIDTH, PhotoPreview.HEIGHT)) # previews width/height
@@ -122,40 +124,30 @@ class PhotoPreview(pygame.sprite.Sprite):
         scalled = pygame.transform.scale(image, (PhotoPreview.WIDTH, PhotoPreview.HEIGHT))
         self.image.blit((scalled), (0, 0))
 
-
-class PygView(object):
-    """
-    Main view which handles all of the rendering
-    """
-
-    def __init__(self, controller, conf, camera):
+class TextBox(pygame.sprite.Sprite):
+    def __init__(self, group, conf, size, center):
+        pygame.sprite.Sprite.__init__(self, group)
         self.conf = conf
-        self.controller = controller
+        self._layer = 99 # on top of everything
+        self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size/2)
 
-        pygame.init()
-        pygame.mouse.set_visible(False)
+        # surface & positioning
+        self.image = pygame.Surface(size)
+        self.image.set_colorkey((0,0,0)) # black transparent
+        self.rect = self.image.get_rect()
+        self.rect.center = center
+        self.image.convert_alpha()
 
-        # TODO:
-        # self.add_button_listener()
-
-        flags = pygame.DOUBLEBUF | [0, pygame.FULLSCREEN][self.conf.fullscreen]
-        self.canvas = pygame.display.set_mode((self.conf.screen_width, self.conf.screen_height), flags)
-        self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
-
-        # create drawing components
-        self.previews = dict()
-        self.allgroup = pygame.sprite.Group()
-        for num in xrange(4):
-            self.previews[num] = PhotoPreview(self.allgroup, num, conf)
-        self.lv = LiveView(self.allgroup, conf, camera)
+    def update(self):
+        pass
 
     def draw_text(self, text):
-
         fw, fh = self.font.size(text)
-        surface = self.font.render(text, True, self.font_color)
-        self.canvas.blit(surface, ((self.width - fw) // 2, (self.height - fh) // 2))
+        surface = self.font.render(text, True, self.conf.font_color)
+        self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
 
     def render_text_centered(self, *text_lines):
+        #FIXME
         location = self.canvas.get_rect()
         rendered_lines = [self.font.render(text, True, self.conf.font_color) for text in text_lines]
         line_height = self.font.get_linesize()
@@ -169,6 +161,7 @@ class PygView(object):
             self.canvas.blit(line, line_pos)
 
     def render_text_bottom(self, text, size=142):
+        #FIXME
         location = self.canvas.get_rect()
         line = self.font.render(text, True, self.conf.font_color)
         line_height = font.get_linesize()
@@ -177,6 +170,29 @@ class PygView(object):
         line_pos.centerx = location.centerx
         line_pos.centery = location.height - 2 * line_height
         self.canvas.blit(line, line_pos)
+
+
+class PygView(object):
+    """
+    Main view which handles all of the rendering
+    """
+
+    def __init__(self, controller, conf, camera):
+        self.conf = conf
+        self.controller = controller
+
+        flags = pygame.DOUBLEBUF | [0, pygame.FULLSCREEN][self.conf.fullscreen]
+        self.canvas = pygame.display.set_mode((self.conf.screen_width, self.conf.screen_height), flags)
+        self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
+
+        # create drawing components
+        self.previews = dict()
+        self.allgroup = pygame.sprite.LayeredUpdates()
+        for num in xrange(4):
+            self.previews[num] = PhotoPreview(self.allgroup, num, conf)
+        self.lv = LiveView(self.allgroup, conf, camera)
+        self.textbox = TextBox(self.allgroup, conf, self.lv.rect.size, self.lv.rect.center)
+
 
     def update(self):
         self.allgroup.update()
@@ -199,7 +215,12 @@ class PhotoBoothController(object):
         self.camera = camera
         self.conf = config
 
+        pygame.init()
+        pygame.mouse.set_visible(False)
+
         self.clock = pygame.time.Clock()
+
+        #TODO: add hardware button listener
 
         #TODO: move to Configuration
         self.count_down_time = 5
@@ -210,12 +231,6 @@ class PhotoBoothController(object):
         self.is_running = False
         self.model = None
         self.view = PygView(self, self.conf, self.camera)
-
-
-    def display_image(self, image_name):
-        picture = self.load_image(image_name)
-        picture = pygame.transform.scale(picture, self.size)
-        self.main_surface.blit(picture, (0, 0))
 
     def run(self):
         """Main loop"""
@@ -267,8 +282,7 @@ class PhotoBoothController(object):
         self.view.lv.start()
 
     def set_text(self, text):
-        #TODO
-        self.view.render_text_centered(text)
+        self.view.textbox.draw_text(text)
 
     def wait(self):
         self.main_surface.fill((0, 0, 0))
