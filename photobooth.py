@@ -44,6 +44,7 @@ default_config = {
     'font_color': (210, 210, 210),
     'font_size': 142,
     'back_color': (230, 180, 40),
+    'back_image': 'assets/pixelbackground_02_by_kara1984.jpg',
 
     'left_margin': 20,
     'left_offset': 48/3,

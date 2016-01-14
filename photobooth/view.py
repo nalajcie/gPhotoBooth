@@ -147,6 +147,11 @@ class PygView(object):
         flags = pygame.DOUBLEBUF | [0, pygame.FULLSCREEN][self.conf.fullscreen]
         self.canvas = pygame.display.set_mode((self.conf.screen_width, self.conf.screen_height), flags)
         self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
+        if self.conf.back_image:
+            image = pygame.image.load(self.conf.back_image)
+            self.back_image = pygame.transform.scale(image, (self.conf.screen_width, self.conf.screen_height))
+            self.back_image.convert()
+
 
         # create drawing components
         self.previews = dict()
@@ -165,6 +170,9 @@ class PygView(object):
 
     def flip(self):
         pygame.display.update()
-        self.canvas.fill(self.conf.back_color)
+        if self.back_image:
+            self.canvas.blit(self.back_image, (0,0))
+        else:
+            self.canvas.fill(self.conf.back_color)
 
 
