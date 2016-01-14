@@ -9,6 +9,7 @@ class LiveView(pygame.sprite.Sprite):
     """
     WIDTH  = 848
     HEIGHT = 560
+    BORDER = 2
 
     def __init__(self, group, conf, camera):
         pygame.sprite.Sprite.__init__(self, group)
@@ -17,9 +18,9 @@ class LiveView(pygame.sprite.Sprite):
         self.camera = camera
 
         # surface & positioning
-        self.image = pygame.Surface((LiveView.WIDTH, LiveView.HEIGHT)) # previews width/height
+        self.image = pygame.Surface((LiveView.WIDTH + LiveView.BORDER * 2, LiveView.HEIGHT + LiveView.BORDER * 2)) # previews width/height
         self.rect = self.image.get_rect()
-        self.rect.topleft = (self.conf.left_margin, self.conf.top_margin)
+        self.rect.topleft = (self.conf.left_margin - LiveView.BORDER, self.conf.top_margin - LiveView.BORDER)
         self.image.convert()
         self.stop()
 
@@ -29,7 +30,7 @@ class LiveView(pygame.sprite.Sprite):
         scalled = pygame.transform.scale(image, (LiveView.WIDTH, LiveView.HEIGHT))
         if flip_image:
             scalled = pygame.transform.flip(scalled, True, False)
-        self.image.blit((scalled), (0, 0))
+        self.image.blit(scalled, (LiveView.BORDER, LiveView.BORDER))
 
     def start(self):
         self.is_started = True
@@ -38,7 +39,7 @@ class LiveView(pygame.sprite.Sprite):
         self.is_started = False
 
         # draw empty rect
-        pygame.draw.rect(self.image, (255,0,0), (0, 0, LiveView.WIDTH, LiveView.HEIGHT),1)
+        pygame.draw.rect(self.image, (255,0,0), (0, 0, LiveView.WIDTH + LiveView.BORDER + 1, LiveView.HEIGHT + LiveView.BORDER + 1),LiveView.BORDER)
 
     def pause(self):
         self.is_started = False
@@ -57,30 +58,33 @@ class PhotoPreview(pygame.sprite.Sprite):
     """
     WIDTH  = 200
     HEIGHT = 133
+    BORDER = 1
+
     def __init__(self, group, number, conf):
         pygame.sprite.Sprite.__init__(self, group)
         self.conf = conf
         self._layer = 4
         self.number = number
         # surface & positioning
-        self.image = pygame.Surface((PhotoPreview.WIDTH, PhotoPreview.HEIGHT)) # previews width/height
+        self.image = pygame.Surface((PhotoPreview.WIDTH + PhotoPreview.BORDER * 2, PhotoPreview.HEIGHT + PhotoPreview.BORDER * 2)) # previews width/height
         self.rect = self.image.get_rect()
-        self.rect.topleft = (self.conf.left_margin + self.number * (PhotoPreview.WIDTH + self.conf.left_offset), self.conf.top_margin + LiveView.HEIGHT + self.conf.bottom_margin)
+        self.rect.topleft = (self.conf.left_margin - PhotoPreview.BORDER + self.number * (PhotoPreview.WIDTH + self.conf.left_offset),
+                self.conf.top_margin - PhotoPreview.BORDER + LiveView.HEIGHT + self.conf.bottom_margin)
         self.image.convert()
         self.draw_empty_rect()
 
     def draw_empty_rect(self):
         """ draws empty rectangle with the number in the middle of it"""
-        pygame.draw.rect(self.image, (0,255,0), (0,0,PhotoPreview.WIDTH,PhotoPreview.HEIGHT),1)
+        pygame.draw.rect(self.image, (0,255,0), (0,0,PhotoPreview.WIDTH + PhotoPreview.BORDER + 1,PhotoPreview.HEIGHT + PhotoPreview.BORDER + 1), PhotoPreview.BORDER)
         font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
-        fw, fh = font.size(str(self.number +1 ))
+        fw, fh = font.size(str(self.number + 1))
         surface = font.render(str(self.number + 1), True, self.conf.font_color)
         self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
 
     def draw_image(self, image):
         """ starts displaying image instead of empty rect """
         scalled = pygame.transform.scale(image, (PhotoPreview.WIDTH, PhotoPreview.HEIGHT))
-        self.image.blit((scalled), (0, 0))
+        self.image.blit((scalled), (PhotoPreview.BORDER, PhotoPreview.BORDER))
 
 class TextBox(pygame.sprite.Sprite):
     def __init__(self, group, conf, size, center):
