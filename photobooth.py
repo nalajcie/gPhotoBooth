@@ -305,6 +305,12 @@ class PhotoBoothController(object):
         #if self.upload_to:
         #    upload_image_async(self.upload_to, file_path)
 
+    def load_captured_image(self, file_name):
+        file_path = os.path.join(self.conf.save_path, file_name)
+        img = pygame.image.load(file_path)
+        img.convert()
+        return img
+
     def notify_captured_image(self, image_number):
         #TODO: big display on LV?
         self.view.lv.pause()
@@ -432,8 +438,7 @@ class PhotoSessionModel(object):
         return self.capture_start.strftime('%Y-%m-%d-%H%M%S') + '-' + str(count) + '.jpg'
 
     def set_captured_image(self, image_name, image_number):
-        img = pygame.image.load(image_name)
-        img.convert()
+        img = self.controller.load_captured_image(image_name)
 
         self.image_names[image_number] = image_name
         self.images[image_number] = img
