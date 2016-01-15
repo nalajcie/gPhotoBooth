@@ -141,11 +141,16 @@ class TextBox(pygame.sprite.Sprite):
 
 class PygView(object):
     """
-    Main view which handles all of the rendering
+    Main view which handles all of the rendering.
+
+    We have 2 main different screens:
+        - idle screen - showing previews of previous shoots
+        - main view with LiveView and 4 previews
     """
 
     def __init__(self, controller, conf, camera):
         self.conf = conf
+        self.camera = camera
         self.controller = controller
 
         flags = pygame.DOUBLEBUF | [0, pygame.FULLSCREEN][self.conf.fullscreen]
@@ -156,19 +161,38 @@ class PygView(object):
             self.back_image = pygame.transform.scale(image, (self.conf.screen_width, self.conf.screen_height))
             self.back_image.convert()
 
-
         # create drawing components
+        self.mainview_group = pygame.sprite.LayeredUpdates()
+        self.idleview_group = pygame.sprite.LayeredUpdates()
+        self.is_idle = True
+
+        self.init_child_components()
+
+    def init_child_components(self):
+        """ Create child graphics components """
         self.previews = dict()
-        self.allgroup = pygame.sprite.LayeredUpdates()
         for num in xrange(4):
-            self.previews[num] = PhotoPreview(self.allgroup, num, conf)
-        self.lv = LiveView(self.allgroup, conf, camera)
-        self.textbox = TextBox(self.allgroup, conf, self.lv.rect.size, self.lv.rect.center)
+            self.previews[num] = PhotoPreview(self.mainview_group, num, self.conf)
+        self.lv = LiveView(self.mainview_group, self.conf, self.camera)
+        self.textbox = TextBox(self.mainview_group, self.conf, self.lv.rect.size, self.lv.rect.center)
+
+    @property
+    def idle(self):
+        return self.is_idle
+
+    @idle.setter
+    def set_idle(self, val):
+        self.is_idle = val
 
 
     def update(self):
-        self.allgroup.update()
-        self.allgroup.draw(self.canvas)
+        if self.is_idle:
+            self.idleview_group.update()
+            self.idleview_group.draw(self.canvas)
+        else:
+            self.mainview_group.update()
+            self.mainview_group.draw(self.canvas)
+
         self.flip()
 
 

@@ -115,7 +115,7 @@ class PhotoSessionModel(object):
 
     def quit(self):
         # any cleaning needed - put it here
-        yield
+        pass
 
     def idle(self):
         return not self.capture_start and time.time() - self.session_start > self.booth.idle_time

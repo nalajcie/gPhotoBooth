@@ -45,6 +45,8 @@ class PhotoBoothController(object):
             # photo session in progress
             if self.model:
                 self.model.update(button_pressed)
+                if self.model.finished():
+                    self.end_session()
 
             else:
                 if button_pressed:
@@ -74,8 +76,12 @@ class PhotoBoothController(object):
             return False
 
     def start_new_session(self):
-        #TODO: change view from mosaics to photobooth view
+        self.view.is_idle = False
         self.model = model.PhotoSessionModel(self)
+
+    def end_session(self):
+        self.view.is_idle = True
+        self.model = None
 
 
     def start_live_view(self):
