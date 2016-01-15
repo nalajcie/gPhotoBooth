@@ -76,11 +76,13 @@ class PhotoBoothController(object):
             return False
 
     def start_new_session(self):
-        self.view.is_idle = False
+        logging.debug("PhotoSession START")
+        self.view.idle = False
         self.model = model.PhotoSessionModel(self)
 
     def end_session(self):
-        self.view.is_idle = True
+        logging.debug("PhotoSession END")
+        self.view.idle = True
         self.model = None
 
 

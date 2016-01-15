@@ -19,7 +19,8 @@ file_log_handler.setFormatter(formatter)
 logger.addHandler(file_log_handler)
 
 stdout_log_handler = logging.StreamHandler(sys.stdout)
-stdout_log_handler.setLevel(logging.WARN)
+#stdout_log_handler.setLevel(logging.WARN)
+stdout_log_handler.setLevel(logging.DEBUG)
 logger.addHandler(stdout_log_handler)
 
 logger.setLevel(logging.DEBUG)

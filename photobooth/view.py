@@ -39,6 +39,7 @@ class LiveView(pygame.sprite.Sprite):
         self.is_started = False
 
         # draw empty rect
+        self.image.fill((0,0,0)) # black
         pygame.draw.rect(self.image, (255,0,0), (0, 0, LiveView.WIDTH + LiveView.BORDER + 1, LiveView.HEIGHT + LiveView.BORDER + 1),LiveView.BORDER)
 
     def pause(self):
@@ -71,10 +72,11 @@ class PhotoPreview(pygame.sprite.Sprite):
         self.rect.topleft = (self.conf.left_margin - PhotoPreview.BORDER + self.number * (PhotoPreview.WIDTH + self.conf.left_offset),
                 self.conf.top_margin - PhotoPreview.BORDER + LiveView.HEIGHT + self.conf.bottom_margin)
         self.image.convert()
-        self.draw_empty_rect()
+        self.draw_rect()
 
-    def draw_empty_rect(self):
+    def draw_rect(self):
         """ draws empty rectangle with the number in the middle of it"""
+        self.image.fill((0,0,0)) # black
         pygame.draw.rect(self.image, (0,255,0), (0,0,PhotoPreview.WIDTH + PhotoPreview.BORDER + 1,PhotoPreview.HEIGHT + PhotoPreview.BORDER + 1), PhotoPreview.BORDER)
         font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
         fw, fh = font.size(str(self.number + 1))
@@ -164,9 +166,9 @@ class PygView(object):
         # create drawing components
         self.mainview_group = pygame.sprite.LayeredUpdates()
         self.idleview_group = pygame.sprite.LayeredUpdates()
-        self.is_idle = True
 
         self.init_child_components()
+        self.idle = True
 
     def init_child_components(self):
         """ Create child graphics components """
@@ -181,8 +183,13 @@ class PygView(object):
         return self.is_idle
 
     @idle.setter
-    def set_idle(self, val):
+    def idle(self, val):
         self.is_idle = val
+        logger.info("Idle: %s" % val)
+        if self.is_idle:
+            self.lv.stop() # just to be sure
+            for pp in self.previews.values():
+                pp.draw_rect()
 
 
     def update(self):
