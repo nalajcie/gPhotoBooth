@@ -85,7 +85,7 @@ if __name__ == '__main__':
         if args.dummy:
             cam = camera.DummyCamera()
         else:
-            cam = cam.GPhotoCamera()
+            cam = camera.GPhotoCamera()
     except ValueError, e:
         logger.exception("Camera could not be initialised, exiting!")
         sys.exit(-1)
