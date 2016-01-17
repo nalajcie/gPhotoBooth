@@ -3,30 +3,50 @@ import pygame
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
 
-class LiveView(pygame.sprite.Sprite):
+class PhotoPreview(pygame.sprite.DirtySprite):
     """
-    LiveView display from the camera
+    Generic photo preview, ancestor of all preview classes
     """
-    WIDTH  = 848
-    HEIGHT = 560
-    BORDER = 2
-
-    def __init__(self, group, conf, camera):
-        pygame.sprite.Sprite.__init__(self, group)
+    def __init__(self, group, conf, size, position, border_width):
+        super(PhotoPreview, self).__init__(group)
         self.conf = conf
-        self._layer = 5
-        self.camera = camera
+        self._layer = 4
+        self.border = border_width;
+        self.size = (size[0] + 2 * border_width, size[1] + 2 * border_width)
 
         # surface & positioning
-        self.image = pygame.Surface((LiveView.WIDTH + LiveView.BORDER * 2, LiveView.HEIGHT + LiveView.BORDER * 2)) # previews width/height
+        self.image = pygame.Surface(self.size)
         self.rect = self.image.get_rect()
-        self.rect.topleft = (self.conf.left_margin - LiveView.BORDER, self.conf.top_margin - LiveView.BORDER)
+        self.rect.topleft = position
         self.image.convert()
-        self.stop()
+
+        #animation
         self.animate_idx = 0
         self.animate_file_list = None
         self.animate_change_every_ms = 0
         self.animate_next_change = 0
+
+    def draw_rect(self):
+        """ draws empty rectangle with the number in the middle of it"""
+        self.image.fill((0,0,0)) # black
+        pygame.draw.rect(self.image, (0,255,0), (0,0, self.size[0], self.size[1]), self.border)
+        #logger.debug("%s:  draw_rect()" % self)
+        self.dirty = 1
+
+    def draw_number(self, number):
+        """ draws a number in the middle of the surface """
+        font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
+        fw, fh = font.size(str(number))
+        surface = font.render(str(number), True, self.conf.font_color)
+        self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
+        #logger.debug("%s: draw_number()" % self)
+        self.dirty = 1
+
+    def draw_image(self, image):
+        """ blits image onto surface """
+        self.image.blit(image, (self.border, self.border))
+        #logger.debug("%s: draw_image()" % self)
+        self.dirty = 1
 
     def start_animate(self, file_list, fps):
         """ Starts indefinately animating file list ala GIF """
@@ -34,25 +54,71 @@ class LiveView(pygame.sprite.Sprite):
         self.animate_idx = 0
         self.animate_change_every_ms = 1000 / fps
 
+    def stop_animate(self):
+        self.animate_file_list = None
+
+    def update(self):
+        if self.animate_file_list:
+            if self.animate_next_change < pygame.time.get_ticks():
+                self.draw_image(self.animate_file_list[self.animate_idx], False)
+                self.animate_idx = (self.animate_idx + 1) % len(self.animate_file_list)
+                self.animate_next_change = pygame.time.get_ticks() + self.animate_change_every_ms
+                self.dirty = 1
+
+
+class SmallPhotoPreview(PhotoPreview):
+    """
+    Small photo preview, displays empty frame at first, and a small picture afterwards
+    """
+    WIDTH  = 200
+    HEIGHT = 133
+    BORDER = 1
+
+    def __init__(self, group, conf, position, number):
+        size = (SmallPhotoPreview.WIDTH, SmallPhotoPreview.HEIGHT)
+        super(SmallPhotoPreview, self).__init__(group, conf, size, position, SmallPhotoPreview.BORDER)
+        self.number = number
+        self.reset()
+
+    def __str__(self):
+        return "SmallPhotoPreview(num=%d)" % self.number
+
+    def reset(self):
+        self.draw_rect()
+        self.draw_number(self.number)
+
+
+class LivePreview(PhotoPreview):
+    """
+    LiveView display from the camera
+    """
+    WIDTH  = 848
+    HEIGHT = 560
+    BORDER = 2
+
+    def __init__(self, group, conf, position, camera):
+        size = (LivePreview.WIDTH, LivePreview.HEIGHT)
+        super(LivePreview, self).__init__(group, conf, size, position, LivePreview.BORDER)
+        self.camera = camera
+
+        self.stop()
+
     def draw_image(self, image, flip_image):
         """ starts displaying image instead of empty rect """
-        scalled = pygame.transform.scale(image, (LiveView.WIDTH, LiveView.HEIGHT))
+        #scalled = pygame.transform.scale(image, (LiveView.WIDTH, LiveView.HEIGHT))
         if flip_image:
-            scalled = pygame.transform.flip(scalled, True, False)
-        self.image.blit(scalled, (LiveView.BORDER, LiveView.BORDER))
+            image = pygame.transform.flip(image, True, False)
+        super(LivePreview, self).draw_image(image)
 
     def start(self):
-        self.is_started = True
-        self.animate_file_list = None
+        self.stop_animate()
         self.camera.start_preview()
+        self.is_started = True
 
     def stop(self):
         self.is_started = False
         self.camera.stop_preview()
-
-        # draw empty rect
-        self.image.fill((0,0,0)) # black
-        pygame.draw.rect(self.image, (255,0,0), (0, 0, LiveView.WIDTH + LiveView.BORDER + 1, LiveView.HEIGHT + LiveView.BORDER + 1),LiveView.BORDER)
+        self.draw_rect()
 
     def pause(self):
         self.is_started = False
@@ -62,52 +128,13 @@ class LiveView(pygame.sprite.Sprite):
     def update(self):
         if self.is_started:
             self.draw_image(self.camera.capture_preview(), self.conf.flip_preview)
-        elif self.animate_file_list:
-            if self.animate_next_change < pygame.time.get_ticks():
-                self.draw_image(self.animate_file_list[self.animate_idx], False)
-                self.animate_idx = (self.animate_idx + 1) % len(self.animate_file_list)
-                self.animate_next_change = pygame.time.get_ticks() + self.animate_change_every_ms
+        else:
+            super(LivePreview, self).update()
 
 
-
-class PhotoPreview(pygame.sprite.Sprite):
-    """
-    Small static photo preview, displays empty frame at first, and a small picture afterwards
-    """
-    WIDTH  = 200
-    HEIGHT = 133
-    BORDER = 1
-
-    def __init__(self, group, number, conf):
-        pygame.sprite.Sprite.__init__(self, group)
-        self.conf = conf
-        self._layer = 4
-        self.number = number
-        # surface & positioning
-        self.image = pygame.Surface((PhotoPreview.WIDTH + PhotoPreview.BORDER * 2, PhotoPreview.HEIGHT + PhotoPreview.BORDER * 2)) # previews width/height
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (self.conf.left_margin - PhotoPreview.BORDER + (self.number - 1) * (PhotoPreview.WIDTH + self.conf.left_offset),
-                self.conf.top_margin - PhotoPreview.BORDER + LiveView.HEIGHT + self.conf.bottom_margin)
-        self.image.convert()
-        self.draw_rect()
-
-    def draw_rect(self):
-        """ draws empty rectangle with the number in the middle of it"""
-        self.image.fill((0,0,0)) # black
-        pygame.draw.rect(self.image, (0,255,0), (0,0,PhotoPreview.WIDTH + PhotoPreview.BORDER + 1,PhotoPreview.HEIGHT + PhotoPreview.BORDER + 1), PhotoPreview.BORDER)
-        font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
-        fw, fh = font.size(str(self.number))
-        surface = font.render(str(self.number), True, self.conf.font_color)
-        self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
-
-    def draw_image(self, image):
-        """ starts displaying image instead of empty rect """
-        #scalled = pygame.transform.scale(image, (PhotoPreview.WIDTH, PhotoPreview.HEIGHT))
-        self.image.blit(image, (PhotoPreview.BORDER, PhotoPreview.BORDER))
-
-class TextBox(pygame.sprite.Sprite):
+class TextBox(pygame.sprite.DirtySprite):
     def __init__(self, group, conf, size, center):
-        pygame.sprite.Sprite.__init__(self, group)
+        super(TextBox, self).__init__(group)
         self.conf = conf
         self._layer = 99 # on top of everything
         self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size/2)
@@ -123,11 +150,6 @@ class TextBox(pygame.sprite.Sprite):
     def update(self):
         pass
 
-    #def draw_text(self, text):
-    #    fw, fh = self.font.size(text)
-    #    surface = self.font.render(text, True, self.conf.font_color)
-    #    self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
-
     def draw_text(self, text_lines):
         if self.current_text == text_lines:
             return
@@ -138,6 +160,7 @@ class TextBox(pygame.sprite.Sprite):
         rendered_lines = [self.font.render(text, True, self.conf.font_color) for text in text_lines]
         line_height = self.font.get_linesize()
         middle_line = len(text_lines) / 2.0 - 0.5
+        self.dirty = 1
 
         for i, line in enumerate(rendered_lines):
             line_pos = line.get_rect()
@@ -163,8 +186,8 @@ class PygView(object):
     Main view which handles all of the rendering.
 
     We have 2 main different screens:
-        - idle screen - showing previews of previous shoots
-        - main view with LiveView and 4 previews
+        - idle screen - showing animated previews of previous shoots
+        - main view with LivePreview and 4 small previews
     """
 
     def __init__(self, controller, conf, camera):
@@ -178,11 +201,17 @@ class PygView(object):
         if self.conf.back_image:
             image = pygame.image.load(self.conf.back_image)
             self.back_image = pygame.transform.scale(image, (self.conf.screen_width, self.conf.screen_height))
-            self.back_image.convert()
+        else:
+            self.back_image = pygame.Surface((self.conf.screen_width, self.conf.screen_height))
+            self.back_image.fill(self.conf.back_color)
+        self.back_image.convert()
 
         # create drawing components
-        self.mainview_group = pygame.sprite.LayeredUpdates()
-        self.idleview_group = pygame.sprite.LayeredUpdates()
+        self.mainview_group = pygame.sprite.LayeredDirty()
+        self.idleview_group = pygame.sprite.LayeredDirty()
+
+        self.mainview_group.clear(self.canvas, self.back_image)
+        self.idleview_group.clear(self.canvas, self.back_image)
 
         self.init_child_components()
         self.fps = self.conf.idle_fps
@@ -192,10 +221,16 @@ class PygView(object):
         """ Create child graphics components """
         width = self.conf.screen_width
         height = self.conf.screen_height
+        self.lv = LivePreview(self.mainview_group, self.conf, (self.conf.left_margin, self.conf.top_margin), self.camera)
+
+        left_offset = self.conf.left_margin - SmallPhotoPreview.BORDER
+        top_offset = self.conf.top_margin - SmallPhotoPreview.BORDER + LivePreview.HEIGHT + self.conf.bottom_margin
+
         self.previews = dict()
         for num in xrange(1, 5):
-            self.previews[num] = PhotoPreview(self.mainview_group, num, self.conf)
-        self.lv = LiveView(self.mainview_group, self.conf, self.camera)
+            self.previews[num] = SmallPhotoPreview(self.mainview_group, self.conf, (left_offset, top_offset), num)
+            left_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.WIDTH + self.conf.left_offset
+
         self.textbox = TextBox(self.mainview_group, self.conf, self.lv.rect.size, self.lv.rect.center)
 
     @property
@@ -206,11 +241,13 @@ class PygView(object):
     def idle(self, val):
         self.is_idle = val
         logger.info("Idle: %s" % val)
+        self.canvas.blit(self.back_image, (0,0))
+        #pygame.display.flip()
         if self.is_idle:
             self.fps = self.conf.idle_fps
             self.lv.stop() # just to be sure
             for pp in self.previews.values():
-                pp.draw_rect()
+                pp.reset()
         else:
             self.fps = self.conf.working_fps
 
@@ -218,19 +255,12 @@ class PygView(object):
     def update(self):
         if self.is_idle:
             self.idleview_group.update()
-            self.idleview_group.draw(self.canvas)
+            dirty_rects = self.idleview_group.draw(self.canvas)
         else:
             self.mainview_group.update()
-            self.mainview_group.draw(self.canvas)
+            dirty_rects = self.mainview_group.draw(self.canvas)
 
-        self.flip()
-
-
-    def flip(self):
-        pygame.display.update()
-        if self.back_image:
-            self.canvas.blit(self.back_image, (0,0))
-        else:
-            self.canvas.fill(self.conf.back_color)
+        logger.debug("DIRTY RECTS: %s" % dirty_rects)
+        pygame.display.update(dirty_rects)
 
 

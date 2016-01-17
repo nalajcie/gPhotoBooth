@@ -37,7 +37,7 @@ debug_override = {
     'midphoto_countdown_secs': 1,
     'image_display_secs': 1,
     'montage_display_secs': 5,
-    'idle_secs': 30,
+    'idle_secs': 5,
     'montage_fps': 4,
 }
 

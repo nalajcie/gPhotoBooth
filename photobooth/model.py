@@ -113,6 +113,7 @@ class PhotoSessionModel(object):
     Single Photo Session model (holding global attributes) and state machine
     """
     def __init__(self, photo_booth_model, id):
+        logger.info("Starting new photo session, id=%d" % id)
         self.booth_model = photo_booth_model
         self.controller = self.booth_model.controller
         self.conf = self.controller.conf

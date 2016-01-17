@@ -78,10 +78,10 @@ class PhotoBoothController(object):
         return img
 
     def scale_image_for_lv(self, image):
-        return pygame.transform.scale(image, (view.LiveView.WIDTH, view.LiveView.HEIGHT))
+        return pygame.transform.scale(image, (view.LivePreview.WIDTH, view.LivePreview.HEIGHT))
 
     def scale_and_save_image_for_preview(self, image, file_path):
-        img_prev = pygame.transform.scale(image, (view.PhotoPreview.WIDTH, view.PhotoPreview.HEIGHT))
+        img_prev = pygame.transform.scale(image, (view.SmallPhotoPreview.WIDTH, view.SmallPhotoPreview.HEIGHT))
         pygame.image.save(img_prev, file_path)
         return img_prev
 
