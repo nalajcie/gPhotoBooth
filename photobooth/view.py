@@ -185,6 +185,7 @@ class PygView(object):
         self.idleview_group = pygame.sprite.LayeredUpdates()
 
         self.init_child_components()
+        self.fps = self.conf.idle_fps
         self.idle = True
 
     def init_child_components(self):
@@ -206,9 +207,12 @@ class PygView(object):
         self.is_idle = val
         logger.info("Idle: %s" % val)
         if self.is_idle:
+            self.fps = self.conf.idle_fps
             self.lv.stop() # just to be sure
             for pp in self.previews.values():
                 pp.draw_rect()
+        else:
+            self.fps = self.conf.working_fps
 
 
     def update(self):

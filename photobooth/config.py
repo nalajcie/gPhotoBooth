@@ -7,7 +7,8 @@ default_config = {
     'screen_width': 1280,
     'screen_height': 800,
     'fullscreen': 0,
-    'fps': 30,
+    'idle_fps': 4,
+    'working_fps': 30,
 
     # controller-related vars
     'save_path': '.',
