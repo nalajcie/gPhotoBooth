@@ -34,9 +34,11 @@ class LiveView(pygame.sprite.Sprite):
 
     def start(self):
         self.is_started = True
+        self.camera.start_preview()
 
     def stop(self):
         self.is_started = False
+        self.camera.stop_preview()
 
         # draw empty rect
         self.image.fill((0,0,0)) # black
