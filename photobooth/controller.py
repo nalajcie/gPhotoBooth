@@ -22,14 +22,8 @@ class PhotoBoothController(object):
 
         #TODO: add hardware button listener
 
-        #TODO: move to Configuration
-        self.count_down_time = 5
-        self.image_display_time = 3
-        self.montage_display_time = 15
-        self.idle_time = 240
-
         self.is_running = False
-        self.model = None
+        self.model = model.PhotoBoothModel(self)
         self.view = view.PygView(self, self.conf, self.camera)
 
     def run(self):
@@ -41,16 +35,7 @@ class PhotoBoothController(object):
             button_pressed = self.process_events()
 
             self.view.update()
-
-            # photo session in progress
-            if self.model:
-                self.model.update(button_pressed)
-                if self.model.finished():
-                    self.end_session()
-
-            else:
-                if button_pressed:
-                    self.start_new_session()
+            self.model.update(button_pressed)
 
             pygame.display.set_caption("[FPS]: %.2f" % (self.clock.get_fps()))
         else:
@@ -75,39 +60,35 @@ class PhotoBoothController(object):
         else:
             return False
 
-    def start_new_session(self):
-        logging.debug("PhotoSession START")
-        self.view.idle = False
-        self.model = model.PhotoSessionModel(self)
-
-    def end_session(self):
-        logging.debug("PhotoSession END")
-        self.view.idle = True
-        self.model = None
-
-
     def start_live_view(self):
         self.view.lv.start()
 
     def set_text(self, text_lines):
         self.view.textbox.draw_text(text_lines)
 
-    def capture_image(self, file_name):
-        file_path = os.path.join(self.conf.save_path, file_name)
+    def capture_image(self, file_path):
         logger.info("Capturing image to: %s", file_path)
+        self.view.lv.pause()
         self.camera.capture_image(file_path)
         #if self.upload_to:
         #    upload_image_async(self.upload_to, file_path)
 
-    def load_captured_image(self, file_name):
-        file_path = os.path.join(self.conf.save_path, file_name)
-        img = pygame.image.load(file_path)
-        img.convert()
+    def load_captured_image(self, file_path):
+        img = pygame.image.load(file_path).convert()
         return img
 
-    def notify_captured_image(self, image_number):
-        #TODO: big display on LV?
-        self.view.lv.pause()
-        self.view.previews[image_number - 1].draw_image(self.model.images[image_number])
-        self.view.lv.draw_image(self.model.images[image_number], False)
+    def scale_image_for_lv(self, image):
+        return pygame.transform.scale(image, (view.LiveView.WIDTH, view.LiveView.HEIGHT))
+
+    def scale_and_save_image_for_preview(self, image, file_path):
+        img_prev = pygame.transform.scale(image, (view.PhotoPreview.WIDTH, view.PhotoPreview.HEIGHT))
+        pygame.image.save(img_prev, file_path)
+        return img_prev
+
+    def notify_captured_image(self, image_number, img, img_prev):
+        self.view.previews[image_number].draw_image(img_prev)
+        self.view.lv.draw_image(img, False)
+
+    def animate_montage(self, img_list):
+        self.view.lv.start_animate(img_list, self.conf.montage_fps)
 

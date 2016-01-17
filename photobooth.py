@@ -40,6 +40,9 @@ default_config = {
     'initial_countdown_secs': 3,
     'midphoto_countdown_secs': 3,
     'image_display_secs': 2,
+    'montage_display_secs': 5,
+    'idle_secs': 30,
+    'montage_fps': 4,
 
     # whole screen drawing-related consts
     'font_color': (210, 210, 210),

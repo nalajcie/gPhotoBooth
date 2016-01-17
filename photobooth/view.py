@@ -23,7 +23,16 @@ class LiveView(pygame.sprite.Sprite):
         self.rect.topleft = (self.conf.left_margin - LiveView.BORDER, self.conf.top_margin - LiveView.BORDER)
         self.image.convert()
         self.stop()
+        self.animate_idx = 0
+        self.animate_file_list = None
+        self.animate_change_every_ms = 0
+        self.animate_next_change = 0
 
+    def start_animate(self, file_list, fps):
+        """ Starts indefinately animating file list ala GIF """
+        self.animate_file_list = file_list
+        self.animate_idx = 0
+        self.animate_change_every_ms = 1000 / fps
 
     def draw_image(self, image, flip_image):
         """ starts displaying image instead of empty rect """
@@ -34,6 +43,7 @@ class LiveView(pygame.sprite.Sprite):
 
     def start(self):
         self.is_started = True
+        self.animate_file_list = None
         self.camera.start_preview()
 
     def stop(self):
@@ -46,12 +56,17 @@ class LiveView(pygame.sprite.Sprite):
 
     def pause(self):
         self.is_started = False
+        self.camera.stop_preview()
         # do not overwrite with black rectangle
 
     def update(self):
-        #TODO: capture preview in other thread
-        if (self.is_started):
+        if self.is_started:
             self.draw_image(self.camera.capture_preview(), self.conf.flip_preview)
+        elif self.animate_file_list:
+            if self.animate_next_change < pygame.time.get_ticks():
+                self.draw_image(self.animate_file_list[self.animate_idx], False)
+                self.animate_idx = (self.animate_idx + 1) % len(self.animate_file_list)
+                self.animate_next_change = pygame.time.get_ticks() + self.animate_change_every_ms
 
 
 
@@ -71,7 +86,7 @@ class PhotoPreview(pygame.sprite.Sprite):
         # surface & positioning
         self.image = pygame.Surface((PhotoPreview.WIDTH + PhotoPreview.BORDER * 2, PhotoPreview.HEIGHT + PhotoPreview.BORDER * 2)) # previews width/height
         self.rect = self.image.get_rect()
-        self.rect.topleft = (self.conf.left_margin - PhotoPreview.BORDER + self.number * (PhotoPreview.WIDTH + self.conf.left_offset),
+        self.rect.topleft = (self.conf.left_margin - PhotoPreview.BORDER + (self.number - 1) * (PhotoPreview.WIDTH + self.conf.left_offset),
                 self.conf.top_margin - PhotoPreview.BORDER + LiveView.HEIGHT + self.conf.bottom_margin)
         self.image.convert()
         self.draw_rect()
@@ -81,14 +96,14 @@ class PhotoPreview(pygame.sprite.Sprite):
         self.image.fill((0,0,0)) # black
         pygame.draw.rect(self.image, (0,255,0), (0,0,PhotoPreview.WIDTH + PhotoPreview.BORDER + 1,PhotoPreview.HEIGHT + PhotoPreview.BORDER + 1), PhotoPreview.BORDER)
         font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
-        fw, fh = font.size(str(self.number + 1))
-        surface = font.render(str(self.number + 1), True, self.conf.font_color)
+        fw, fh = font.size(str(self.number))
+        surface = font.render(str(self.number), True, self.conf.font_color)
         self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
 
     def draw_image(self, image):
         """ starts displaying image instead of empty rect """
-        scalled = pygame.transform.scale(image, (PhotoPreview.WIDTH, PhotoPreview.HEIGHT))
-        self.image.blit((scalled), (PhotoPreview.BORDER, PhotoPreview.BORDER))
+        #scalled = pygame.transform.scale(image, (PhotoPreview.WIDTH, PhotoPreview.HEIGHT))
+        self.image.blit(image, (PhotoPreview.BORDER, PhotoPreview.BORDER))
 
 class TextBox(pygame.sprite.Sprite):
     def __init__(self, group, conf, size, center):
@@ -174,8 +189,10 @@ class PygView(object):
 
     def init_child_components(self):
         """ Create child graphics components """
+        width = self.conf.screen_width
+        height = self.conf.screen_height
         self.previews = dict()
-        for num in xrange(4):
+        for num in xrange(1, 5):
             self.previews[num] = PhotoPreview(self.mainview_group, num, self.conf)
         self.lv = LiveView(self.mainview_group, self.conf, self.camera)
         self.textbox = TextBox(self.mainview_group, self.conf, self.lv.rect.size, self.lv.rect.center)
