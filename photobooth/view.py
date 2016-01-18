@@ -211,7 +211,9 @@ class PygView(object):
         self.idleview_group = pygame.sprite.LayeredDirty()
 
         self.mainview_group.clear(self.canvas, self.back_image)
+        self.mainview_group.set_timing_treshold(1000. / self.conf.working_fps)
         self.idleview_group.clear(self.canvas, self.back_image)
+        self.idleview_group.set_timing_treshold(1000. / self.conf.idle_fps)
 
         self.init_child_components()
         self.fps = self.conf.idle_fps
