@@ -19,6 +19,7 @@ default_config = {
     'montage_display_secs': 5,
     'idle_secs': 30,
     'montage_fps': 4,
+    'idle_previews_cnt': 16,
 
     # whole screen drawing-related consts
     'font_color': (210, 210, 210),
@@ -27,7 +28,8 @@ default_config = {
     'back_image': 'assets/pixelbackground_02_by_kara1984.jpg',
 
     'left_margin': 20,
-    'left_offset': 48/3,
+    'left_offset': 42/3,
+    'top_offset': 42/3,
     'bottom_margin': 20,
     'top_margin': 20,
 }

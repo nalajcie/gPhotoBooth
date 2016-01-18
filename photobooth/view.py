@@ -60,7 +60,7 @@ class PhotoPreview(pygame.sprite.DirtySprite):
     def update(self):
         if self.animate_file_list:
             if self.animate_next_change < pygame.time.get_ticks():
-                self.draw_image(self.animate_file_list[self.animate_idx], False)
+                self.draw_image(self.animate_file_list[self.animate_idx])
                 self.animate_idx = (self.animate_idx + 1) % len(self.animate_file_list)
                 self.animate_next_change = pygame.time.get_ticks() + self.animate_change_every_ms
                 self.dirty = 1
@@ -103,7 +103,7 @@ class LivePreview(PhotoPreview):
 
         self.stop()
 
-    def draw_image(self, image, flip_image):
+    def draw_flip_image(self, image, flip_image):
         """ starts displaying image instead of empty rect """
         #scalled = pygame.transform.scale(image, (LiveView.WIDTH, LiveView.HEIGHT))
         if flip_image:
@@ -127,7 +127,7 @@ class LivePreview(PhotoPreview):
 
     def update(self):
         if self.is_started:
-            self.draw_image(self.camera.capture_preview(), self.conf.flip_preview)
+            self.draw_flip_image(self.camera.capture_preview(), self.conf.flip_preview)
         else:
             super(LivePreview, self).update()
 
@@ -223,13 +223,26 @@ class PygView(object):
         height = self.conf.screen_height
         self.lv = LivePreview(self.mainview_group, self.conf, (self.conf.left_margin, self.conf.top_margin), self.camera)
 
+        #main previews
+        self.main_previews = dict()
+
         left_offset = self.conf.left_margin - SmallPhotoPreview.BORDER
         top_offset = self.conf.top_margin - SmallPhotoPreview.BORDER + LivePreview.HEIGHT + self.conf.bottom_margin
-
-        self.previews = dict()
         for num in xrange(1, 5):
-            self.previews[num] = SmallPhotoPreview(self.mainview_group, self.conf, (left_offset, top_offset), num)
+            self.main_previews[num] = SmallPhotoPreview(self.mainview_group, self.conf, (left_offset, top_offset), num)
             left_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.WIDTH + self.conf.left_offset
+
+        #idle previews
+        self.idle_previews = dict()
+
+        left_offset = self.conf.left_margin - SmallPhotoPreview.BORDER
+        top_offset = self.conf.top_margin - SmallPhotoPreview.BORDER
+        for num in xrange (1, 17):
+            self.idle_previews[num] = SmallPhotoPreview(self.idleview_group, self.conf, (left_offset, top_offset), num)
+            left_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.WIDTH + self.conf.left_offset
+            if num % 4 == 0:
+                left_offset = self.conf.left_margin - SmallPhotoPreview.BORDER
+                top_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.HEIGHT + self.conf.top_offset
 
         self.textbox = TextBox(self.mainview_group, self.conf, self.lv.rect.size, self.lv.rect.center)
 
@@ -242,11 +255,11 @@ class PygView(object):
         self.is_idle = val
         logger.info("Idle: %s" % val)
         self.canvas.blit(self.back_image, (0,0))
-        #pygame.display.flip()
+        pygame.display.flip()
         if self.is_idle:
             self.fps = self.conf.idle_fps
             self.lv.stop() # just to be sure
-            for pp in self.previews.values():
+            for pp in self.main_previews.values():
                 pp.reset()
         else:
             self.fps = self.conf.working_fps
@@ -260,7 +273,7 @@ class PygView(object):
             self.mainview_group.update()
             dirty_rects = self.mainview_group.draw(self.canvas)
 
-        logger.debug("DIRTY RECTS: %s" % dirty_rects)
+        #logger.debug("DIRTY RECTS: %s" % dirty_rects)
         pygame.display.update(dirty_rects)
 
 

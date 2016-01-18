@@ -73,7 +73,7 @@ class CountdownState(TimedState):
 
     def take_picture(self):
         self.model.photo_count += 1
-        image_name = self.booth_model.get_image_name(self.model, self.model.photo_count)
+        image_name = self.booth_model.get_image_name(self.model.id, self.model.photo_count)
         self.model.controller.capture_image(image_name)
         return image_name
 
@@ -136,13 +136,38 @@ class PhotoSessionModel(object):
     def set_captured_image(self, image_name):
         img = self.controller.load_captured_image(image_name)
         img_lv = self.controller.scale_image_for_lv(img)
-        img_prev = self.controller.scale_and_save_image_for_preview(img_lv, self.booth_model.get_image_prev_name(self, self.photo_count))
+        img_prev = self.controller.scale_and_save_image_for_preview(img_lv, self.booth_model.get_image_prev_name(self.id, self.photo_count))
 
         self.images[self.photo_count] = (img, img_lv, img_prev)
         self.controller.notify_captured_image(self.photo_count, img, img_prev)
 
+    def get_finished_session_model(self):
+        return FinishedSessionModel(self.booth_model, self.id, [ sizes[2] for k, sizes in self.images.items() ])
+
     def finished(self):
         return self.state is None
+
+class FinishedSessionModel(object):
+    """ finised session previews to be displayed in idle screen """
+    def __init__(self, booth_model, sess_id, img_list):
+        self.id = sess_id
+        self.booth_model = booth_model
+        self.img_list = img_list
+
+    @classmethod
+    def fromDir(cls, booth_model, sess_id):
+        img_list = []
+        for num in xrange(1, 5):
+            img_name = booth_model.get_image_prev_name(sess_id, num)
+            try:
+                img = booth_model.controller.load_captured_image(img_name)
+                img_list.append(img)
+            except Exception, e:
+                logger.exception(e)
+                raise ValueError # error while opening/reading file, incomplete photo session
+
+        return cls(booth_model, sess_id, img_list)
+
 
 class PhotoBoothModel(object):
     """
@@ -153,21 +178,31 @@ class PhotoBoothModel(object):
         self.controller = controller
         self.current_sess = None
         self.next_photo_session = 1
-        self.load_from_disk()
+        self.finished_sessions = []
 
     def load_from_disk(self):
+        all_sessions = []
         for d in os.listdir(self.conf.save_path):
             logger.debug("SCANNING: '%s'" % d)
-            try:
-                sess_id = int(d)
-            except ValueError:
-                sess_id = None
-            if sess_id:
-                logger.debug("PHOTO_SESS : '%s' = %d" % (d, sess_id))
-                # TODO: load from disk for previews in idle screen
-                self.next_photo_session = max(self.next_photo_session, sess_id + 1)
-            pass
+            path = os.path.join(self.conf.save_path, d)
+            if os.path.isdir(path):
+                try:
+                    sess_id = int(d)
+                except ValueError:
+                    sess_id = None
+                if sess_id:
+                    try:
+                        sess = FinishedSessionModel.fromDir(self, sess_id)
+                        all_sessions.append(sess)
+                        logger.debug("PHOTO_SESS : '%s' = %s" % (d, sess))
+                    except ValueError:
+                        logger.info("\t%d: incomplete session" % sess_id)
+                    # even if it's incompelete, we can't reuse the ID
+                    self.next_photo_session = max(self.next_photo_session, sess_id + 1)
 
+        all_sessions.sort(key=lambda x: x.id)
+        self.finished_sessions = all_sessions
+        self.update_finished()
 
     def update(self, button_pressed):
         if self.current_sess:
@@ -185,11 +220,11 @@ class PhotoBoothModel(object):
     def get_session_dir(self, sess_id):
         return os.path.join(self.conf.save_path, str(sess_id))
 
-    def get_image_name(self, photo_sess, count):
-        return os.path.join(self.conf.save_path, str(photo_sess.id), str(count) + '.jpg')
+    def get_image_name(self, sess_id, count):
+        return os.path.join(self.conf.save_path, str(sess_id), str(count) + '.jpg')
 
-    def get_image_prev_name(self, photo_sess, count):
-        return os.path.join(self.conf.save_path, str(photo_sess.id), str(count) + '_prev.jpg')
+    def get_image_prev_name(self, sess_id, count):
+        return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_prev.jpg')
         #self.capture_start.strftime('%Y-%m-%d-%H%M%S') + '-' + str(count) + '.jpg'
 
     def start_new_session(self):
@@ -201,8 +236,22 @@ class PhotoBoothModel(object):
 
     def end_session(self):
         logging.debug("PhotoSession END")
-        self.controller.view.idle = True
+        if self.current_sess.finished():
+            self.finished_sessions.append(self.current_sess.get_finished_session_model())
+            self.update_finished()
         self.current_sess = None
+        self.controller.view.idle = True
+
+    def update_finished(self):
+        """ update idle previews with finished sessions """
+        self.finished_sessions = self.finished_sessions[-self.conf.idle_previews_cnt:]
+        logger.info("FINISED SESSIONS CNT: %d" % len(self.finished_sessions))
+        self.controller.notify_idle_previews_changed()
+
+    #generator!
+    def get_idle_previews_image_lists(self):
+        for sess in reversed(self.finished_sessions):
+            yield sess.img_list
 
     def quit(self):
         # any cleaning needed - put it here

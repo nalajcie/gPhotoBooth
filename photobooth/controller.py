@@ -23,8 +23,9 @@ class PhotoBoothController(object):
         #TODO: add hardware button listener
 
         self.is_running = False
-        self.model = model.PhotoBoothModel(self)
         self.view = view.PygView(self, self.conf, self.camera)
+        self.model = model.PhotoBoothModel(self)
+        self.model.load_from_disk()
 
     def run(self):
         """Main loop"""
@@ -86,9 +87,15 @@ class PhotoBoothController(object):
         return img_prev
 
     def notify_captured_image(self, image_number, img, img_prev):
-        self.view.previews[image_number].draw_image(img_prev)
-        self.view.lv.draw_image(img, False)
+        self.view.main_previews[image_number].draw_image(img_prev)
+        self.view.lv.draw_image(img)
 
     def animate_montage(self, img_list):
         self.view.lv.start_animate(img_list, self.conf.montage_fps)
 
+    def notify_idle_previews_changed(self):
+        prev_num = 1
+        for img_list in self.model.get_idle_previews_image_lists():
+            #logger.debug("preview[%d] = %s <- %s" % (prev_num, self.view.idle_previews[prev_num], img_list))
+            self.view.idle_previews[prev_num].start_animate(img_list, self.conf.montage_fps)
+            prev_num += 1
