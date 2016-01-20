@@ -1,3 +1,4 @@
 from piggyphoto import piggyphoto
-__all__ = ["piggyphoto"]
+from thermal_printer import Adafruit_Thermal
+__all__ = ["piggyphoto", "Adafruit_Thermal"]
 

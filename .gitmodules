@@ -1,3 +1,6 @@
 [submodule "local_modules/piggyphoto"]
 	path = local_modules/piggyphoto
 	url = https://github.com/nalajcie/piggyphoto.git
+[submodule "local_modules/thermal_printer"]
+	path = local_modules/thermal_printer
+	url = https://github.com/nalajcie/Python-Thermal-Printer.git
