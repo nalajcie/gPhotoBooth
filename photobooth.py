@@ -5,8 +5,7 @@ import sys
 import argparse
 import logging
 
-from photobooth import controller, camera, config
-
+from photobooth import controller, camera, config, printer
 
 
 ### setup global logger
@@ -32,8 +31,7 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--dummy",        help="Use dummy camera instead of GPhoto interface", action="store_true")
     parser.add_argument("-D", "--debug",        help="Use debug configuration for easier development", action="store_true")
     parser.add_argument("-f", "--fullscreen",   help="Use fullscreen mode", action="store_true")
-    parser.add_argument("-p", "--print_count",  help="Set number of copies to print", type=int, default=0)
-    parser.add_argument("-P", "--printer",      help="Set printer to use", default=None)
+    parser.add_argument("-P", "--printer",      help="Use Thermal printer (default: NullPrinter)", action="store_true")
     parser.add_argument("-u", "--upload_to",    help="Url to upload images to")
     args = parser.parse_args()
 
@@ -45,8 +43,10 @@ if __name__ == '__main__':
 
     conf.fullscreen = args.fullscreen
     conf.save_path = args.save_path
+    conf.thermal_printer = args.printer
     logger.info("Full configuration: %s", conf)
 
+    # setup CAMERA
     try:
         if args.dummy:
             cam = camera.DummyCamera()
@@ -56,7 +56,13 @@ if __name__ == '__main__':
         logger.exception("Camera could not be initialised, exiting!")
         sys.exit(-1)
 
-    booth = controller.PhotoBoothController(cam, conf)
+    # setup PRINTER
+    if conf.thermal_printer:
+        printer = printer.ThermalPrinter()
+    else:
+        printer = printer.NullPrinter()
+
+    booth = controller.PhotoBoothController(conf, cam, printer)
     try:
         booth.run()
     except Exception:

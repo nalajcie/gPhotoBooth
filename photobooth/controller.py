@@ -11,9 +11,10 @@ class PhotoBoothController(object):
     QUIT_KEYS = pygame.K_ESCAPE, pygame.K_q
     BUTTON_KEY= pygame.K_SPACE,
 
-    def __init__(self, camera, config):
-        self.camera = camera
+    def __init__(self, config, camera, printer):
         self.conf = config
+        self.camera = camera
+        self.printer = printer
 
         pygame.init()
         pygame.mouse.set_visible(False)
@@ -57,6 +58,9 @@ class PhotoBoothController(object):
                     self.is_running = False
                 elif event.key in PhotoBoothController.BUTTON_KEY:
                     return True
+                elif event.key == pygame.K_p: # for debugging
+                    self.print_camera_preview()
+                    return False
                 # TODO: add our userevent for external button
         else:
             return False
@@ -73,6 +77,10 @@ class PhotoBoothController(object):
         self.camera.capture_image(file_path)
         #if self.upload_to:
         #    upload_image_async(self.upload_to, file_path)
+
+    def print_camera_preview(self):
+        img = self.view.lv.image
+        self.printer.print_image(img)
 
     def load_captured_image(self, file_path):
         img = pygame.image.load(file_path).convert()

@@ -20,6 +20,7 @@ default_config = {
     'idle_secs': 30,
     'montage_fps': 4,
     'idle_previews_cnt': 16,
+    'thermal_printer': False,
 
     # whole screen drawing-related consts
     'font_color': (210, 210, 210),
