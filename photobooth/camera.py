@@ -4,7 +4,7 @@ from StringIO import StringIO
 import pygame
 import shutil
 
-class GPhotoCamera():
+class GPhotoCamera(object):
     def __init__(self):
         """ Camera initialisation """
         try:
@@ -32,16 +32,15 @@ class GPhotoCamera():
     def capture_image(self, file_path):
         """ Full-size image capture and save to destination """
         self.cam.capture_image(file_path)
-        return
 
     def close(self):
         """ Camera closing """
         self.cam.close()
 
-class DummyCamera():
+class DummyCamera(object):
     def __init__(self):
         print "CAMERA: DummyCamera serving only static JPEGs"
-        return
+        pass
 
     def start_preview(self):
         pass
@@ -55,8 +54,7 @@ class DummyCamera():
 
     def capture_image(self, file_path):
         shutil.copyfile("dummy-preview.jpg", file_path)
-        return
 
     def close(self):
-        return
+        pass
 
