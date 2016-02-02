@@ -163,7 +163,7 @@ class FinishedSessionModel(object):
                 img = booth_model.controller.load_captured_image(img_name)
                 img_list.append(img)
             except Exception, e:
-                logger.exception(e)
+                #logger.exception(e)
                 raise ValueError # error while opening/reading file, incomplete photo session
 
         return cls(booth_model, sess_id, img_list)
@@ -183,7 +183,7 @@ class PhotoBoothModel(object):
     def load_from_disk(self):
         all_sessions = []
         for d in os.listdir(self.conf.save_path):
-            logger.debug("SCANNING: '%s'" % d)
+            #logger.debug("SCANNING: '%s'" % d)
             path = os.path.join(self.conf.save_path, d)
             if os.path.isdir(path):
                 try:
@@ -194,9 +194,10 @@ class PhotoBoothModel(object):
                     try:
                         sess = FinishedSessionModel.fromDir(self, sess_id)
                         all_sessions.append(sess)
-                        logger.debug("PHOTO_SESS : '%s' = %s" % (d, sess))
+                        logger.info("PHOTO_SESS : '%s' = %s" % (d, sess))
                     except ValueError:
-                        logger.info("\t%d: incomplete session" % sess_id)
+                        #logger.debug("\t%d: incomplete session" % sess_id)
+                        pass
                     # even if it's incompelete, we can't reuse the ID
                     self.next_photo_session = max(self.next_photo_session, sess_id + 1)
 
