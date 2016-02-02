@@ -94,9 +94,9 @@ class PhotoBoothController(object):
         pygame.image.save(img_prev, file_path)
         return img_prev
 
-    def notify_captured_image(self, image_number, img, img_prev):
+    def notify_captured_image(self, image_number, img_lv, img_prev):
         self.view.main_previews[image_number].draw_image(img_prev)
-        self.view.lv.draw_image(img)
+        self.view.lv.draw_image(img_lv)
 
     def animate_montage(self, img_list):
         self.view.lv.start_animate(img_list, self.conf.montage_fps)

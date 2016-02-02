@@ -26,7 +26,7 @@ def quit_pressed():
 
 def update_preview():
     cfile = C.capture_preview()
-    picture = pygame.image.load(StringIO(cfile.get_data()))
+    picture = pygame.image.load(StringIO(cfile.get_data())).convert()
     main_surface.blit(picture, (0, 0))
     pygame.display.flip()
 

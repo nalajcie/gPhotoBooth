@@ -139,7 +139,7 @@ class PhotoSessionModel(object):
         img_prev = self.controller.scale_and_save_image_for_preview(img_lv, self.booth_model.get_image_prev_name(self.id, self.photo_count))
 
         self.images[self.photo_count] = (img, img_lv, img_prev)
-        self.controller.notify_captured_image(self.photo_count, img, img_prev)
+        self.controller.notify_captured_image(self.photo_count, img_lv, img_prev)
 
     def get_finished_session_model(self):
         return FinishedSessionModel(self.booth_model, self.id, [ sizes[2] for k, sizes in self.images.items() ])

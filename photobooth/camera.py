@@ -26,7 +26,7 @@ class GPhotoCamera(object):
     def capture_preview(self):
         """ Single LiveView frame """
         cfile = self.cam.capture_preview()
-        picture = pygame.image.load(StringIO(cfile.get_data()))
+        picture = pygame.image.load(StringIO(cfile.get_data())).convert()
         return picture
 
     def capture_image(self, file_path):
@@ -49,7 +49,7 @@ class DummyCamera(object):
         pass
 
     def capture_preview(self):
-        picture = pygame.image.load("dummy-preview.jpg")
+        picture = pygame.image.load("dummy-preview.jpg").convert()
         return picture
 
     def capture_image(self, file_path):
