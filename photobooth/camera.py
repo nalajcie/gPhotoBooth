@@ -46,7 +46,7 @@ class GPhotoCamera(object):
                     picture = StringIO(cfile.get_data())
                     #picture = pygame.image.load(StringIO(cfile.get_data())).convert()
                     self.preview_jpegs.put(picture)
-                    logger.debug("capture_worker: preview captured!")
+                    logger.debug("capture_worker: preview captured!, queue size: %d" % self.preview_jpegs.qsize())
 
 
     def start_preview(self):
@@ -70,6 +70,12 @@ class GPhotoCamera(object):
 
     def capture_preview(self):
         """ Single LiveView frame """
+        # drop frames
+        while self.preview_jpegs.qsize() > 1:
+            logger.info("DROPPING FRAME!")
+            self.preview_jpegs.get()
+            self.preview_jpegs.task_done()
+
         file = self.preview_jpegs.get()
         picture = pygame.image.load(file).convert()
         self.preview_jpegs.task_done()
