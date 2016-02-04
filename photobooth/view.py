@@ -49,10 +49,16 @@ class PhotoPreview(pygame.sprite.DirtySprite):
         self.dirty = 1
 
     def start_animate(self, file_list, fps):
-        """ Starts indefinately animating file list ala GIF """
+        """
+        Starts indefinately animating file list ala GIF.
+        if fps = 0 -> synchronize with display FPS
+        """
         self.animate_file_list = file_list
         self.animate_idx = 0
-        self.animate_change_every_ms = 1000 / fps
+        if fps == 0: # next pframe every update()
+            self.animate_change_every_ms = 0
+        else:
+            self.animate_change_every_ms = 1000 / fps
 
     def stop_animate(self):
         self.animate_file_list = None
@@ -283,7 +289,8 @@ class PygView(object):
         dirty_rects = []
         if self.is_idle:
             self.idleview_group.update()
-            dirty_rects = self.idleview_group.draw(self.canvas)
+            #dirty_rects = self.idleview_group.draw(self.canvas)
+            dirty_rects += [ pp.draw(self.canvas) for pp in self.idle_previews.values() ]
         else:
             #dirty_rects = self.mainview_group.draw(self.canvas)
             self.mainview_group.update()
@@ -291,7 +298,7 @@ class PygView(object):
             dirty_rects += [ pp.draw(self.canvas) for pp in self.main_previews.values() ]
             self.textbox.draw(self.canvas) # textbox drawn over LV, no need to add to dirty rects
 
-        logger.debug("DIRTY RECTS: %s" % dirty_rects)
+        #logger.debug("DIRTY RECTS: %s" % dirty_rects)
         pygame.display.update(dirty_rects)
 
 

@@ -7,7 +7,7 @@ default_config = {
     'screen_width': 1280,
     'screen_height': 800,
     'fullscreen': 0,
-    'idle_fps': 4,
+    'idle_fps': 2,
     'working_fps': 30,
 
     # controller-related vars

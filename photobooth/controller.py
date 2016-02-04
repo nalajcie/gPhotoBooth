@@ -111,5 +111,5 @@ class PhotoBoothController(object):
         prev_num = 1
         for img_list in self.model.get_idle_previews_image_lists():
             #logger.debug("preview[%d] = %s <- %s" % (prev_num, self.view.idle_previews[prev_num], img_list))
-            self.view.idle_previews[prev_num].start_animate(img_list, self.conf.montage_fps)
+            self.view.idle_previews[prev_num].start_animate(img_list, 0) # if fps == 0 -> sync whith display FPS
             prev_num += 1
