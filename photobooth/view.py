@@ -57,6 +57,12 @@ class PhotoPreview(pygame.sprite.DirtySprite):
     def stop_animate(self):
         self.animate_file_list = None
 
+    def draw(self, canvas):
+        if self.dirty:
+            self.dirty = 0
+            canvas.blit(self.image, self.rect)
+            return self.rect
+
     def update(self):
         if self.animate_file_list:
             if self.animate_next_change < pygame.time.get_ticks():
@@ -169,6 +175,12 @@ class TextBox(pygame.sprite.DirtySprite):
             line_pos.centery = location.centery + lines_to_shift * line_height
             self.image.blit(line, line_pos)
 
+    def draw(self, canvas):
+        if len(self.current_text) > 0: # blit only when displaying text
+            #self.dirty = 0
+            canvas.blit(self.image, self.rect)
+            return self.rect
+
     def render_text_bottom(self, text, size=142):
         #FIXME
         location = self.canvas.get_rect()
@@ -268,14 +280,18 @@ class PygView(object):
 
 
     def update(self):
+        dirty_rects = []
         if self.is_idle:
             self.idleview_group.update()
             dirty_rects = self.idleview_group.draw(self.canvas)
         else:
+            #dirty_rects = self.mainview_group.draw(self.canvas)
             self.mainview_group.update()
-            dirty_rects = self.mainview_group.draw(self.canvas)
+            dirty_rects += [ self.lv.draw(self.canvas) ]
+            dirty_rects += [ pp.draw(self.canvas) for pp in self.main_previews.values() ]
+            self.textbox.draw(self.canvas) # textbox drawn over LV, no need to add to dirty rects
 
-        #logger.debug("DIRTY RECTS: %s" % dirty_rects)
+        logger.debug("DIRTY RECTS: %s" % dirty_rects)
         pygame.display.update(dirty_rects)
 
 
