@@ -28,6 +28,8 @@ class PhotoBoothController(object):
         self.model = model.PhotoBoothModel(self)
         self.model.load_from_disk()
 
+        self.next_fps_update_ticks = 0
+
     def run(self):
         """Main loop"""
 
@@ -39,7 +41,11 @@ class PhotoBoothController(object):
             self.view.update()
             self.model.update(button_pressed)
 
-            pygame.display.set_caption("[FPS]: %.2f" % (self.clock.get_fps()))
+            if self.next_fps_update_ticks < pygame.time.get_ticks():
+                fps_str = "[FPS]: %.2f" % (self.clock.get_fps())
+                pygame.display.set_caption(fps_str)
+                logger.debug(fps_str)
+                self.next_fps_update_ticks = pygame.time.get_ticks() + self.conf.fps_update_ms
         else:
             self.quit()
 

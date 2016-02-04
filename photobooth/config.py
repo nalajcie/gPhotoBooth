@@ -33,6 +33,9 @@ default_config = {
     'top_offset': 42/3,
     'bottom_margin': 20,
     'top_margin': 20,
+
+    # some debug vars
+    'fps_update_ms': 2000
 }
 
 debug_override = {
