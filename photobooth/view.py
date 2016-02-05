@@ -29,7 +29,8 @@ class PhotoPreview(pygame.sprite.DirtySprite):
     def draw_rect(self):
         """ draws empty rectangle with the number in the middle of it"""
         self.image.fill((0,0,0)) # black
-        pygame.draw.rect(self.image, (0,255,0), (0,0, self.size[0], self.size[1]), self.border)
+        if self.border:
+            pygame.draw.rect(self.image, self.conf.border_color, (0,0, self.size[0] - self.border / 2, self.size[1] - self.border / 2), self.border)
         #logger.debug("%s:  draw_rect()" % self)
         self.dirty = 1
 
@@ -84,7 +85,7 @@ class SmallPhotoPreview(PhotoPreview):
     """
     WIDTH  = 200
     HEIGHT = 133
-    BORDER = 1
+    BORDER = 2
 
     def __init__(self, group, conf, position, number):
         size = (SmallPhotoPreview.WIDTH, SmallPhotoPreview.HEIGHT)
@@ -106,7 +107,7 @@ class LivePreview(PhotoPreview):
     """
     WIDTH  = 848
     HEIGHT = 560
-    BORDER = 2
+    BORDER = 4
 
     def __init__(self, group, conf, position, camera):
         size = (LivePreview.WIDTH, LivePreview.HEIGHT)
@@ -255,13 +256,14 @@ class PygView(object):
         #idle previews
         self.idle_previews = dict()
 
-        left_offset = self.conf.left_margin - SmallPhotoPreview.BORDER
+        left_margin = (self.conf.screen_width - ((SmallPhotoPreview.WIDTH + 2 * SmallPhotoPreview.BORDER) * 4 + self.conf.left_offset * 3)) / 2
+        left_offset = left_margin
         top_offset = self.conf.top_margin - SmallPhotoPreview.BORDER
         for num in xrange (1, 17):
             self.idle_previews[num] = SmallPhotoPreview(self.idleview_group, self.conf, (left_offset, top_offset), num)
             left_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.WIDTH + self.conf.left_offset
             if num % 4 == 0:
-                left_offset = self.conf.left_margin - SmallPhotoPreview.BORDER
+                left_offset = left_margin
                 top_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.HEIGHT + self.conf.top_offset
 
         self.textbox = TextBox(self.mainview_group, self.conf, self.lv.rect.size, self.lv.rect.center)

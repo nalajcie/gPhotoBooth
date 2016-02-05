@@ -24,6 +24,8 @@ default_config = {
 
     # whole screen drawing-related consts
     'font_color': (210, 210, 210),
+    'border_color': (0, 0, 0),
+    #'border_color': (255, 0, 0),
     'font_size': 142,
     'back_color': (230, 180, 40),
     'back_image': 'assets/pixelbackground_02_by_kara1984.jpg',
