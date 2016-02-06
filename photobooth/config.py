@@ -31,6 +31,7 @@ default_config = {
     'back_image': 'assets/pixelbackground_02_by_kara1984.jpg',
 
     'left_margin': 20,
+    'idle_space': 20,
     'left_offset': 42/3,
     'top_offset': 42/3,
     'bottom_margin': 20,

@@ -17,7 +17,7 @@ class WaitingState(SessionState):
     def __init__(self, model):
         super(WaitingState, self).__init__(model)
         self.model.controller.start_live_view()
-        self.model.controller.set_text(["Push when ready!"])
+        self.model.controller.set_text("Push when ready!")
 
     def update(self, button_pressed):
         if button_pressed:
@@ -48,10 +48,6 @@ class CountdownState(TimedState):
             self.display_countdown()
             return self
 
-        self.model.controller.start_live_view()
-        self.model.controller.set_text(["Push when ready!"])
-        return self
-
     def display_countdown(self):
         time_remaining = self.timer - time.time()
 
@@ -60,16 +56,17 @@ class CountdownState(TimedState):
             #self.session.booth.display_camera_arrow(clear_screen=True)
             pass
         else:
-            lines = [u'Taking picture %d of 4 in:' %
-                     (self.model.photo_count + 1), str(int(time_remaining))]
-            if time_remaining < 2 and int(time_remaining * 2) % 2 == 1:
-                lines = ["Look at the camera!", ""] + lines
-            elif time_remaining < 2:
-                lines = ["", ""] + lines
-                #self.session.booth.display_camera_arrow()
-            else:
-                lines = ["", ""] + lines
-            self.model.controller.set_text(lines)
+            text = "Taking picture %d / 4 in: %d" % ((self.model.photo_count + 1), int(time_remaining))
+            if time_remaining < 2:
+                if int(time_remaining * 2) % 2 == 1:
+                    #lines = ["Look at the camera!", ""] + lines
+                    # TODO: show arrow + "LOOK"
+                    #self.session.booth.display_camera_arrow()
+                    pass
+                else:
+                    # TODO: do not show arrow + "LOOK"
+                    pass
+            self.model.controller.set_text(text)
 
     def take_picture(self):
         self.model.photo_count += 1
@@ -80,14 +77,12 @@ class CountdownState(TimedState):
 class ShowLastCaptureState(TimedState):
     def __init__(self, model, image_name):
         super(ShowLastCaptureState, self).__init__(model, model.conf.image_display_secs)
-        self.model.controller.set_text([])
+        self.model.controller.set_text("Nice!")
         self.model.set_captured_image(image_name)
 
     def update(self, button_pressed):
         if self.time_up():
             if self.model.photo_count == 4:
-                #TODO
-                #return None
                 return ShowSessionMontageState(self.model)
             else:
                 self.model.controller.start_live_view()
@@ -106,7 +101,21 @@ class ShowSessionMontageState(TimedState):
         if self.time_up():
             return None
         else:
+            self.update_text()
             return self
+
+    def update_text(self):
+        time_remaining = self.timer - time.time()
+
+        int_time = int(time_remaining)
+        if int_time == 4:
+            self.model.controller.set_text("Generating GIF...")
+        elif int_time == 3:
+            self.model.controller.set_text("Uploading...")
+        elif int_time == 2:
+            self.model.controller.set_text("Printing...")
+        elif int_time == 1:
+            self.model.controller.set_text("Enjoying time with You...")
 
 class PhotoSessionModel(object):
     """

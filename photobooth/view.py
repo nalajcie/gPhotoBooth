@@ -26,6 +26,14 @@ class PhotoPreview(pygame.sprite.DirtySprite):
         self.animate_change_every_ms = 0
         self.animate_next_change = 0
 
+    @classmethod
+    def width(self):
+        return self.WIDTH + 2 * self.BORDER
+
+    @classmethod
+    def height(self):
+        return self.HEIGHT + 2 * self.BORDER
+
     def draw_rect(self):
         """ draws empty rectangle with the number in the middle of it"""
         self.image.fill((0,0,0)) # black
@@ -145,59 +153,49 @@ class LivePreview(PhotoPreview):
             super(LivePreview, self).update()
 
 
-class TextBox(pygame.sprite.DirtySprite):
+class TextBox(PhotoPreview):
+    """
+    TODO
+    """
+    WIDTH = 1
+    HEIGHT = 100
+    BORDER = 5
+
     def __init__(self, group, conf, size, center):
-        super(TextBox, self).__init__(group)
-        self.conf = conf
-        self._layer = 99 # on top of everything
+        super(TextBox, self).__init__(group, conf, (size[0], self.HEIGHT), center, self.BORDER)
         self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size/2)
 
         # surface & positioning
-        self.image = pygame.Surface(size)
-        self.image.set_colorkey((0,0,0)) # black transparent
-        self.rect = self.image.get_rect()
+        #self.image = pygame.Surface(size)
+        #self.image.set_colorkey((0,0,0)) # black transparent
+        #self.rect = self.image.get_rect()
         self.rect.center = center
-        self.image.convert_alpha()
-        self.current_text = [""]
+        self.image.convert()
+        self.current_text = ""
 
     def update(self):
         pass
 
-    def draw_text(self, text_lines):
-        if self.current_text == text_lines:
+    def draw_text(self, text):
+        if self.current_text == text:
             return
 
-        self.current_text = text_lines
+        self.current_text = text
         self.image.fill((0,0,0))
         location = self.image.get_rect()
-        rendered_lines = [self.font.render(text, True, self.conf.font_color) for text in text_lines]
+        line = self.font.render(text, True, self.conf.font_color)
         line_height = self.font.get_linesize()
-        middle_line = len(text_lines) / 2.0 - 0.5
+        line_pos = line.get_rect()
+        line_pos.center = (self.rect.width / 2, self.rect.height / 2)
+
+        self.image.blit(line, line_pos)
         self.dirty = 1
 
-        for i, line in enumerate(rendered_lines):
-            line_pos = line.get_rect()
-            lines_to_shift = i - middle_line
-            line_pos.centerx = location.centerx
-            line_pos.centery = location.centery + lines_to_shift * line_height
-            self.image.blit(line, line_pos)
-
     def draw(self, canvas):
-        if len(self.current_text) > 0: # blit only when displaying text
-            #self.dirty = 0
+        if self.dirty: # blit only when displaying text
             canvas.blit(self.image, self.rect)
+            self.dirty = 0
             return self.rect
-
-    def render_text_bottom(self, text, size=142):
-        #FIXME
-        location = self.canvas.get_rect()
-        line = self.font.render(text, True, self.conf.font_color)
-        line_height = font.get_linesize()
-
-        line_pos = line.get_rect()
-        line_pos.centerx = location.centerx
-        line_pos.centery = location.height - 2 * line_height
-        self.canvas.blit(line, line_pos)
 
 
 class PygView(object):
@@ -242,31 +240,49 @@ class PygView(object):
         """ Create child graphics components """
         width = self.conf.screen_width
         height = self.conf.screen_height
-        self.lv = LivePreview(self.mainview_group, self.conf, (self.conf.left_margin, self.conf.top_margin), self.camera)
+
+        main_total_width = LivePreview.width() + self.conf.idle_space + SmallPhotoPreview.width()
+        main_total_height = LivePreview.height() + self.conf.idle_space + TextBox.height()
+        left_margin = (self.conf.screen_width - main_total_width) / 2
+        top_margin = (self.conf.screen_height - main_total_height) / 2
+
+        self.lv = LivePreview(self.mainview_group, self.conf, (left_margin, top_margin), self.camera)
 
         #main previews
         self.main_previews = dict()
 
-        left_offset = self.conf.left_margin - SmallPhotoPreview.BORDER
-        top_offset = self.conf.top_margin - SmallPhotoPreview.BORDER + LivePreview.HEIGHT + self.conf.bottom_margin
+        main_previews_spacer = (LivePreview.height() - 4 * SmallPhotoPreview.height()) / 3
+
+        left_offset = left_margin + LivePreview.width() + self.conf.idle_space
+        top_offset = top_margin
         for num in xrange(1, 5):
             self.main_previews[num] = SmallPhotoPreview(self.mainview_group, self.conf, (left_offset, top_offset), num)
-            left_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.WIDTH + self.conf.left_offset
+            top_offset += SmallPhotoPreview.height() + main_previews_spacer
+
+        #TEXT BOX
+        top_offset = top_margin + LivePreview.height() + self.conf.idle_space + TextBox.height() / 2
+        self.textbox = TextBox(self.mainview_group, self.conf, (main_total_width, TextBox.height()), (width / 2, top_offset))
 
         #idle previews
         self.idle_previews = dict()
 
-        left_margin = (self.conf.screen_width - ((SmallPhotoPreview.WIDTH + 2 * SmallPhotoPreview.BORDER) * 4 + self.conf.left_offset * 3)) / 2
+
+        idle_total_width = SmallPhotoPreview.width() * 4 + self.conf.idle_space * 3
+        idle_total_height = SmallPhotoPreview.height() * 4 + self.conf.idle_space * 4 + TextBox.height()
+        left_margin = (self.conf.screen_width - idle_total_width) / 2
+
         left_offset = left_margin
-        top_offset = self.conf.top_margin - SmallPhotoPreview.BORDER
+        top_offset = (self.conf.screen_height - idle_total_height) / 2
         for num in xrange (1, 17):
             self.idle_previews[num] = SmallPhotoPreview(self.idleview_group, self.conf, (left_offset, top_offset), num)
-            left_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.WIDTH + self.conf.left_offset
+            left_offset += SmallPhotoPreview.width() + self.conf.idle_space
             if num % 4 == 0:
                 left_offset = left_margin
-                top_offset += 2 * SmallPhotoPreview.BORDER + SmallPhotoPreview.HEIGHT + self.conf.top_offset
+                top_offset += SmallPhotoPreview.height() + self.conf.idle_space
 
-        self.textbox = TextBox(self.mainview_group, self.conf, self.lv.rect.size, self.lv.rect.center)
+        self.idle_textbox = TextBox(self.idleview_group, self.conf, (idle_total_width, TextBox.height()), (width / 2, top_offset + TextBox.height() / 2))
+        self.idle_textbox.draw_text("Push a button!")
+
 
     @property
     def idle(self):
@@ -293,12 +309,13 @@ class PygView(object):
             self.idleview_group.update()
             #dirty_rects = self.idleview_group.draw(self.canvas)
             dirty_rects += [ pp.draw(self.canvas) for pp in self.idle_previews.values() ]
+            dirty_rects += [ self.idle_textbox.draw(self.canvas) ]
         else:
             #dirty_rects = self.mainview_group.draw(self.canvas)
             self.mainview_group.update()
             dirty_rects += [ self.lv.draw(self.canvas) ]
             dirty_rects += [ pp.draw(self.canvas) for pp in self.main_previews.values() ]
-            self.textbox.draw(self.canvas) # textbox drawn over LV, no need to add to dirty rects
+            dirty_rects += [ self.textbox.draw(self.canvas) ]
 
         #logger.debug("DIRTY RECTS: %s" % dirty_rects)
         pygame.display.update(dirty_rects)
