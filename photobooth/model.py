@@ -42,8 +42,7 @@ class CountdownState(TimedState):
 
     def update(self, button_pressed):
         if self.time_up():
-            image_name = self.take_picture()
-            return ShowLastCaptureState(self.model, image_name)
+            return TakePictureState(self.model)
         else:
             self.display_countdown()
             return self
@@ -68,15 +67,13 @@ class CountdownState(TimedState):
                     pass
             self.model.controller.set_text(text)
 
-    def take_picture(self):
-        self.model.photo_count += 1
-        image_name = self.booth_model.get_image_name(self.model.id, self.model.photo_count)
-        self.model.controller.capture_image(image_name)
-        return image_name
 
-class ShowLastCaptureState(TimedState):
-    def __init__(self, model, image_name):
-        super(ShowLastCaptureState, self).__init__(model, model.conf.image_display_secs)
+class TakePictureState(TimedState):
+    def __init__(self, model):
+        super(TakePictureState, self).__init__(model, model.conf.image_display_secs)
+        #TODO: capture in separate thread, display animation while capturing image
+        image_name = self.take_picture()
+        logger.debug("TakePictureState: taken picutre: %s" % image_name)
         self.model.controller.set_text("Nice!")
         self.model.set_captured_image(image_name)
 
@@ -89,6 +86,12 @@ class ShowLastCaptureState(TimedState):
                 return CountdownState(self.model, self.model.conf.midphoto_countdown_secs)
         else:
             return self
+
+    def take_picture(self):
+        self.model.photo_count += 1
+        image_name = self.booth_model.get_image_name(self.model.id, self.model.photo_count)
+        self.model.controller.capture_image(image_name)
+        return image_name
 
 class ShowSessionMontageState(TimedState):
     def __init__(self, model):
@@ -219,7 +222,7 @@ class PhotoBoothModel(object):
             self.current_sess.update(button_pressed)
             if self.current_sess.finished():
                 self.end_session()
-                self.start_new_session() # if previous session ended succsesfully, we will immediately start a new one
+                #self.start_new_session() # if previous session ended succsesfully, we will immediately start a new one
             elif self.current_sess.idle():
                 self.end_session()
 
@@ -250,6 +253,7 @@ class PhotoBoothModel(object):
             self.finished_sessions.append(self.current_sess.get_finished_session_model())
             self.update_finished()
         self.current_sess = None
+        self.controller.stop_live_view()
         self.controller.view.idle = True
 
     def update_finished(self):

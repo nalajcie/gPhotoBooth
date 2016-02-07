@@ -78,7 +78,9 @@ class PhotoPreview(pygame.sprite.DirtySprite):
             canvas.blit(self.image, self.rect)
             return self.rect
 
-    def update(self):
+    def update(self, force_redraw = 0):
+        if force_redraw:
+            self.dirty = 1
         if self.animate_file_list:
             if self.animate_next_change < pygame.time.get_ticks():
                 self.draw_image(self.animate_file_list[self.animate_idx])
@@ -133,24 +135,24 @@ class LivePreview(PhotoPreview):
 
     def start(self):
         self.stop_animate()
-        self.camera.start_preview()
+        #self.camera.start_preview()
         self.is_started = True
 
     def stop(self):
         self.is_started = False
-        self.camera.stop_preview()
+        #self.camera.stop_preview()
         self.draw_rect()
 
     def pause(self):
         self.is_started = False
-        self.camera.stop_preview()
+        #self.camera.stop_preview()
         # do not overwrite with black rectangle
 
-    def update(self):
+    def update(self, force_redraw):
         if self.is_started:
             self.draw_flip_image(self.camera.capture_preview(), self.conf.flip_preview)
         else:
-            super(LivePreview, self).update()
+            super(LivePreview, self).update(force_redraw)
 
 
 class TextBox(PhotoPreview):
@@ -173,8 +175,9 @@ class TextBox(PhotoPreview):
         self.image.convert()
         self.current_text = ""
 
-    def update(self):
-        pass
+    def update(self, force_redraw):
+        if force_redraw:
+            self.dirty = 1
 
     def draw_text(self, text):
         if self.current_text == text:
@@ -293,26 +296,27 @@ class PygView(object):
         self.is_idle = val
         logger.info("Idle: %s" % val)
         self.canvas.blit(self.back_image, (0,0))
-        pygame.display.flip()
+        pygame.display.flip() # ensure we will update full screen, not only dirty rects
         if self.is_idle:
+            self.idleview_group.update(1) # force_redraw = 1
             self.fps = self.conf.idle_fps
-            self.lv.stop() # just to be sure
             for pp in self.main_previews.values():
                 pp.reset()
         else:
+            self.mainview_group.update(1) # force_redraw = 1
             self.fps = self.conf.working_fps
 
 
     def update(self):
         dirty_rects = []
         if self.is_idle:
-            self.idleview_group.update()
+            self.idleview_group.update(0)
             #dirty_rects = self.idleview_group.draw(self.canvas)
             dirty_rects += [ pp.draw(self.canvas) for pp in self.idle_previews.values() ]
             dirty_rects += [ self.idle_textbox.draw(self.canvas) ]
         else:
             #dirty_rects = self.mainview_group.draw(self.canvas)
-            self.mainview_group.update()
+            self.mainview_group.update(0)
             dirty_rects += [ self.lv.draw(self.canvas) ]
             dirty_rects += [ pp.draw(self.canvas) for pp in self.main_previews.values() ]
             dirty_rects += [ self.textbox.draw(self.canvas) ]

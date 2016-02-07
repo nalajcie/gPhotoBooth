@@ -72,15 +72,21 @@ class PhotoBoothController(object):
             return False
 
     def start_live_view(self):
+        self.camera.start_preview()
         self.view.lv.start()
+
+    def stop_live_view(self):
+        self.camera.stop_preview()
+        self.view.lv.stop()
 
     def set_text(self, text_lines):
         self.view.textbox.draw_text(text_lines)
 
     def capture_image(self, file_path):
         logger.info("Capturing image to: %s", file_path)
-        self.view.lv.pause()
+        self.view.lv.pause() # stop updating LV
         self.camera.capture_image(file_path)
+        self.camera.start_preview() #start gahtering ASAP new previews in separate thread
         #if self.upload_to:
         #    upload_image_async(self.upload_to, file_path)
 

@@ -21,37 +21,65 @@ class GPhotoCamera(object):
 
         self.preview_jpegs = Queue(maxsize=0)
         self.preview_surfaces = Queue(maxsize=0)
+        self.curr_preview = pygame.Surface((1,1)) # will be overriden by real image
 
-        self.thread_capture = Thread(target=self.capture_worker)
-        self.thread_capture.setDaemon(True)
-        self.thread_capture_running = True
+        # thread-safe objects
         self.paused = Condition()
         self.is_paused = True
         self.camera_lock = Lock()
-        #self.camera_lock.acquire()
+
+        # start the worker threads
+        self.threads_running = True
+        self.thread_capture = Thread(target=self.capture_worker)
+        self.thread_capture.setDaemon(True)
         self.thread_capture.start()
+
+        self.thread_loadpreview = Thread(target=self.loadpreview_worker)
+        self.thread_loadpreview.setDaemon(True)
+        self.thread_loadpreview.start()
+
         logger.debug("init done")
 
     def capture_worker(self):
-        while self.thread_capture_running:
+        """
+        Thread: captures new JPEG preview via gphoto in separate thread
+        """
+        while self.threads_running:
             with self.paused:
-                while self.is_paused and self.thread_capture_running:
+                while self.is_paused and self.threads_running:
                     self.paused.wait()
 
-                if not self.thread_capture_running:
-                    return
+            if not self.threads_running:
+                return
 
-                with self.camera_lock:
-                    cfile = self.cam.capture_preview()
-                    picture = StringIO(cfile.get_data())
-                    #picture = pygame.image.load(StringIO(cfile.get_data())).convert()
-                    self.preview_jpegs.put(picture)
-                    logger.debug("capture_worker: preview captured!, queue size: %d" % self.preview_jpegs.qsize())
+            with self.camera_lock:
+                cfile = self.cam.capture_preview()
+                picture = StringIO(cfile.get_data())
+                #picture = pygame.image.load(StringIO(cfile.get_data())).convert()
+                self.preview_jpegs.put(picture)
+                logger.debug("capture_worker: preview captured!, queue size: %d" % self.preview_jpegs.qsize())
+
+    def loadpreview_worker(self):
+        """
+        Thread: gets new JPEGs data from queue, loads them into surface and converts
+        """
+        # drop frames
+        while self.threads_running:
+            while self.preview_jpegs.qsize() > 1:
+                logger.info("DROPPING FRAME!")
+                self.preview_jpegs.get()
+                self.preview_jpegs.task_done()
+
+            file = self.preview_jpegs.get()
+            logger.debug("LOADPREVIEW: loading frame")
+            picture = pygame.image.load(file).convert()
+            self.preview_jpegs.task_done()
+            self.curr_preview = picture
 
 
     def start_preview(self):
         """ LiveView initialistation if needed """
-        logger.debug("start preview")
+        logger.debug("start_preview")
         with self.paused:
             self.is_paused = False
             self.paused.notify()
@@ -59,7 +87,7 @@ class GPhotoCamera(object):
 
     def stop_preview(self):
         """ LiveView deinit if needed """
-        logger.debug("start_preview")
+        logger.debug("stop_preview")
         with self.paused:
             self.is_paused = True
         with self.camera_lock:
@@ -70,16 +98,7 @@ class GPhotoCamera(object):
 
     def capture_preview(self):
         """ Single LiveView frame """
-        # drop frames
-        while self.preview_jpegs.qsize() > 1:
-            logger.info("DROPPING FRAME!")
-            self.preview_jpegs.get()
-            self.preview_jpegs.task_done()
-
-        file = self.preview_jpegs.get()
-        picture = pygame.image.load(file).convert()
-        self.preview_jpegs.task_done()
-        return picture
+        return self.curr_preview
 
     def capture_image(self, file_path):
         """ Full-size image capture and save to destination """
@@ -89,9 +108,10 @@ class GPhotoCamera(object):
     def close(self):
         """ Camera closing """
         with self.paused:
-            self.thread_capture_running = False
+            self.threads_running = False
             self.paused.notify()
         self.thread_capture.join()
+        #self.thread_loadpreview.join()
 
         with self.camera_lock:
             self.cam.close()
