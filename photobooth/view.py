@@ -20,11 +20,18 @@ class PhotoPreview(pygame.sprite.DirtySprite):
         self.rect.topleft = position
         self.image.convert()
 
-        #animation
+        # animation
         self.animate_idx = 0
         self.animate_file_list = None
+        self.animate_file_list_len = 0
         self.animate_change_every_ms = 0
         self.animate_next_change = 0
+
+        # overlay
+        self.begin_overlay_animation_frames = []
+        self.end_overlay_animation_frames = []
+        self.is_overlay = False
+        self.image_orig = None
 
     @classmethod
     def width(self):
@@ -33,6 +40,26 @@ class PhotoPreview(pygame.sprite.DirtySprite):
     @classmethod
     def height(self):
         return self.HEIGHT + 2 * self.BORDER
+
+    def load_overlay_animation_frames(self, file_glob, begin, end, l):
+        for i in xrange (begin, end):
+            img = pygame.image.load(file_glob % i).convert_alpha()
+            l.append(img)
+
+    def load_begin_overlay_animation_frames(self, file_glob, begin, end):
+        self.load_overlay_animation_frames(file_glob, begin, end, self.begin_overlay_animation_frames)
+
+    def load_end_overlay_animation_frames(self, file_glob, begin, end):
+        self.load_overlay_animation_frames(file_glob, begin, end, self.end_overlay_animation_frames)
+
+    def begin_overlay(self):
+        """ note: you cannot have an overlay over animation """
+        self.is_overlay = True
+        self.start_animate(self.begin_overlay_animation_frames, 0)
+
+    def end_overlay(self):
+        self.is_overlay = True
+        self.start_animate(self.end_overlay_animation_frames, 0)
 
     def draw_rect(self):
         """ draws empty rectangle with the number in the middle of it"""
@@ -57,14 +84,18 @@ class PhotoPreview(pygame.sprite.DirtySprite):
         #logger.debug("%s: draw_image()" % self)
         self.dirty = 1
 
+    def set_image(self, img):
+        self.image_orig = img
+
     def start_animate(self, file_list, fps):
         """
         Starts indefinately animating file list ala GIF.
         if fps = 0 -> synchronize with display FPS
         """
         self.animate_file_list = file_list
+        self.animate_file_list_len = len(file_list)
         self.animate_idx = 0
-        if fps == 0: # next pframe every update()
+        if fps == 0: # next frame every update()
             self.animate_change_every_ms = 0
         else:
             self.animate_change_every_ms = 1000 / fps
@@ -81,12 +112,19 @@ class PhotoPreview(pygame.sprite.DirtySprite):
     def update(self, force_redraw = 0):
         if force_redraw:
             self.dirty = 1
+        if self.image_orig and self.is_overlay:
+            self.draw_image(self.image_orig)
         if self.animate_file_list:
             if self.animate_next_change < pygame.time.get_ticks():
+                #logger.debug("ANIMATE: %d" % self.animate_idx)
+
                 self.draw_image(self.animate_file_list[self.animate_idx])
-                self.animate_idx = (self.animate_idx + 1) % len(self.animate_file_list)
+                self.animate_idx = (self.animate_idx + 1) % self.animate_file_list_len
+
                 self.animate_next_change = pygame.time.get_ticks() + self.animate_change_every_ms
-                self.dirty = 1
+                if self.is_overlay and self.animate_idx == 0:
+                    self.is_overlay = False
+                    self.stop_animate()
 
 
 class SmallPhotoPreview(PhotoPreview):
@@ -97,18 +135,26 @@ class SmallPhotoPreview(PhotoPreview):
     HEIGHT = 133
     BORDER = 2
 
-    def __init__(self, group, conf, position, number):
+    def __init__(self, group, conf, position, number, load_overlay=False):
         size = (SmallPhotoPreview.WIDTH, SmallPhotoPreview.HEIGHT)
         super(SmallPhotoPreview, self).__init__(group, conf, size, position, SmallPhotoPreview.BORDER)
         self.number = number
         self.reset()
 
+        if load_overlay:
+            self.load_begin_overlay_animation_frames("assets/shutter/small/shutter%02d.png", 0, 8)
+            self.load_end_overlay_animation_frames("assets/shutter/small/shutter%02d.png", 8, 16)
+
     def __str__(self):
         return "SmallPhotoPreview(num=%d)" % self.number
 
     def reset(self):
+        self.image_orig = None
         self.draw_rect()
         self.draw_number(self.number)
+
+    def update(self, force_redraw):
+        super(SmallPhotoPreview, self).update(force_redraw)
 
 
 class LivePreview(PhotoPreview):
@@ -123,7 +169,10 @@ class LivePreview(PhotoPreview):
         size = (LivePreview.WIDTH, LivePreview.HEIGHT)
         super(LivePreview, self).__init__(group, conf, size, position, LivePreview.BORDER)
         self.camera = camera
+        self.enqueued_anim = None
 
+        self.load_begin_overlay_animation_frames("assets/shutter/big/shutter%02d.png", 0, 8)
+        self.load_end_overlay_animation_frames("assets/shutter/big/shutter%02d.png", 8, 16)
         self.stop()
 
     def draw_flip_image(self, image, flip_image):
@@ -134,25 +183,29 @@ class LivePreview(PhotoPreview):
         super(LivePreview, self).draw_image(image)
 
     def start(self):
-        self.stop_animate()
-        #self.camera.start_preview()
         self.is_started = True
 
     def stop(self):
         self.is_started = False
-        #self.camera.stop_preview()
         self.draw_rect()
 
     def pause(self):
         self.is_started = False
-        #self.camera.stop_preview()
         # do not overwrite with black rectangle
+
+    def enqueue_animate_montage(self, img_list, fps):
+        self.enqueued_anim = (img_list, fps)
+        self.set_image(img_list[-1])
 
     def update(self, force_redraw):
         if self.is_started:
             self.draw_flip_image(self.camera.capture_preview(), self.conf.flip_preview)
-        else:
-            super(LivePreview, self).update(force_redraw)
+        elif self.enqueued_anim and not self.is_overlay:
+            img_list, fps = self.enqueued_anim
+            self.enqueued_anim = None
+            self.start_animate(img_list, fps)
+
+        super(LivePreview, self).update(force_redraw)
 
 
 class TextBox(PhotoPreview):
@@ -259,7 +312,7 @@ class PygView(object):
         left_offset = left_margin + LivePreview.width() + self.conf.idle_space
         top_offset = top_margin
         for num in xrange(1, 5):
-            self.main_previews[num] = SmallPhotoPreview(self.mainview_group, self.conf, (left_offset, top_offset), num)
+            self.main_previews[num] = SmallPhotoPreview(self.mainview_group, self.conf, (left_offset, top_offset), num, True)
             top_offset += SmallPhotoPreview.height() + main_previews_spacer
 
         #TEXT BOX

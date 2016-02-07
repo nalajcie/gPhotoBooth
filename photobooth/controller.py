@@ -111,19 +111,27 @@ class PhotoBoothController(object):
             img_lv = pygame.transform.scale(img, (view.LivePreview.WIDTH, view.LivePreview.HEIGHT))
             img_prev = pygame.transform.scale(img_lv, (view.SmallPhotoPreview.WIDTH, view.SmallPhotoPreview.HEIGHT))
 
-            # (3) save the scalled preview
+            # (3) view: start the 'end animation overlay' and resume LV
+            self.view.lv.start()
+            self.view.lv.end_overlay()
+            self.view.main_previews[image_number].set_image(img_prev)
+            self.view.main_previews[image_number].end_overlay()
+
+            # (4) save the scalled preview
             pygame.image.save(img_prev, prev_name)
 
-            # (4) finish the task and send the results
+            # (5) finish the task and send the results
             logger.debug("capture_image_worker: DONE")
             self.capture_names.task_done()
             self.model.set_current_session_imgs(image_number, (img, img_lv, img_prev))
 
-            # (5) set the preview in the view
-            self.view.main_previews[image_number].draw_image(img_prev)
-            #self.view.lv.draw_image(img_lv)
-
     def capture_image(self, image_number, full_file_path, prev_file_path):
+        # view: capture begin animation
+        self.view.lv.pause()
+        self.view.lv.begin_overlay()
+        self.view.main_previews[image_number].begin_overlay()
+
+        # schedule worker thread to capture image
         self.capture_names.put((image_number, full_file_path, prev_file_path))
 
     def print_camera_preview(self):
@@ -134,9 +142,8 @@ class PhotoBoothController(object):
         img = pygame.image.load(file_path).convert()
         return img
 
-    def animate_montage(self, img_list):
-        self.view.lv.pause()
-        self.view.lv.start_animate(img_list, self.conf.montage_fps)
+    def enqueue_animate_montage(self, img_list):
+        self.view.lv.enqueue_animate_montage(img_list, self.conf.montage_fps)
 
     def notify_idle_previews_changed(self):
         prev_num = 1

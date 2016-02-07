@@ -99,7 +99,7 @@ class ShowSessionMontageState(TimedState):
 
         img_lv_list = [ sizes[1] for num, sizes in self.model.images.items()  ]
         self.model.controller.stop_live_view()
-        self.model.controller.animate_montage(img_lv_list)
+        self.model.controller.enqueue_animate_montage(img_lv_list)
 
     def update(self, button_pressed):
         if self.time_up():
