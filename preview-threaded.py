@@ -44,6 +44,8 @@ def quit_pressed():
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             return True
+        if event.type == pygame.KEYUP and event.key == pygame.K_q:
+            return True
         if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
             is_paused = not is_paused
             if is_paused:
@@ -63,9 +65,6 @@ picture = pygame.image.load(StringIO(cfile.get_data()))
 
 size = picture.get_size()
 pygame.display.set_mode(size)
-main_surface = pygame.display.get_surface()
-
-pygame.display.set_mode(picture.get_size())
 main_surface = pygame.display.get_surface()
 clock = pygame.time.Clock()
 
