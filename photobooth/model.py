@@ -55,7 +55,7 @@ class CountdownState(TimedState):
             #self.session.booth.display_camera_arrow(clear_screen=True)
             pass
         else:
-            text = "Taking picture %d / 4 in: %d" % ((self.model.photo_count + 1), int(time_remaining))
+            text = "Taking picture %d / 4 in: %d" % ((self.model.photo_count + 1), int(time_remaining + 1))
             if time_remaining < 2:
                 if int(time_remaining * 2) % 2 == 1:
                     #lines = ["Look at the camera!", ""] + lines
@@ -71,18 +71,17 @@ class CountdownState(TimedState):
 class TakePictureState(TimedState):
     def __init__(self, model):
         super(TakePictureState, self).__init__(model, model.conf.image_display_secs)
-        #TODO: capture in separate thread, display animation while capturing image
+        #TODO: display animation while capturing image
         image_name = self.take_picture()
-        logger.debug("TakePictureState: taken picutre: %s" % image_name)
+        logger.debug("TakePictureState: taking picutre: %s" % image_name)
         self.model.controller.set_text("Nice!")
-        self.model.set_captured_image(image_name)
 
     def update(self, button_pressed):
-        if self.time_up():
+        if self.model.photo_count in self.model.images:
             if self.model.photo_count == 4:
                 return ShowSessionMontageState(self.model)
             else:
-                self.model.controller.start_live_view()
+                self.model.controller.resume_live_view()
                 return CountdownState(self.model, self.model.conf.midphoto_countdown_secs)
         else:
             return self
@@ -90,7 +89,8 @@ class TakePictureState(TimedState):
     def take_picture(self):
         self.model.photo_count += 1
         image_name = self.booth_model.get_image_name(self.model.id, self.model.photo_count)
-        self.model.controller.capture_image(image_name)
+        image_prev_name = self.booth_model.get_image_prev_name(self.model.id, self.model.photo_count)
+        self.model.controller.capture_image(self.model.photo_count, image_name, image_prev_name)
         return image_name
 
 class ShowSessionMontageState(TimedState):
@@ -98,6 +98,7 @@ class ShowSessionMontageState(TimedState):
         super(ShowSessionMontageState, self).__init__(model, model.conf.montage_display_secs)
 
         img_lv_list = [ sizes[1] for num, sizes in self.model.images.items()  ]
+        self.model.controller.stop_live_view()
         self.model.controller.animate_montage(img_lv_list)
 
     def update(self, button_pressed):
@@ -144,14 +145,6 @@ class PhotoSessionModel(object):
 
     def idle(self):
         return not self.capture_start and time.time() - self.session_start > self.conf.idle_secs
-
-    def set_captured_image(self, image_name):
-        img = self.controller.load_captured_image(image_name)
-        img_lv = self.controller.scale_image_for_lv(img)
-        img_prev = self.controller.scale_and_save_image_for_preview(img_lv, self.booth_model.get_image_prev_name(self.id, self.photo_count))
-
-        self.images[self.photo_count] = (img, img_lv, img_prev)
-        self.controller.notify_captured_image(self.photo_count, img_lv, img_prev)
 
     def get_finished_session_model(self):
         return FinishedSessionModel(self.booth_model, self.id, [ sizes[2] for k, sizes in self.images.items() ])
@@ -230,6 +223,9 @@ class PhotoBoothModel(object):
             if button_pressed:
                 self.start_new_session()
 
+    def set_current_session_imgs(self, image_number, images):
+        self.current_sess.images[image_number] = images
+
     def get_session_dir(self, sess_id):
         return os.path.join(self.conf.save_path, str(sess_id))
 
@@ -238,7 +234,6 @@ class PhotoBoothModel(object):
 
     def get_image_prev_name(self, sess_id, count):
         return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_prev.jpg')
-        #self.capture_start.strftime('%Y-%m-%d-%H%M%S') + '-' + str(count) + '.jpg'
 
     def start_new_session(self):
         logging.debug("PhotoSession START")

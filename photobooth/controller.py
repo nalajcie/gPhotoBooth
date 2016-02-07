@@ -2,6 +2,9 @@ import os
 import sys
 import pygame
 import model, view
+from threading import Thread,Lock,Condition
+from Queue import Queue
+
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
@@ -30,10 +33,16 @@ class PhotoBoothController(object):
 
         self.next_fps_update_ticks = 0
 
+        self.capture_names = Queue(maxsize=0)
+        self.thread_capture = Thread(target=self.capture_image_worker)
+        self.thread_capture.setDaemon(True)
+
     def run(self):
         """Main loop"""
 
         self.is_running = True
+        self.thread_capture.start()
+
         while self.is_running:
             self.clock.tick(self.view.fps)
             button_pressed = self.process_events()
@@ -75,6 +84,9 @@ class PhotoBoothController(object):
         self.camera.start_preview()
         self.view.lv.start()
 
+    def resume_live_view(self):
+        self.view.lv.start()
+
     def stop_live_view(self):
         self.camera.stop_preview()
         self.view.lv.stop()
@@ -82,13 +94,37 @@ class PhotoBoothController(object):
     def set_text(self, text_lines):
         self.view.textbox.draw_text(text_lines)
 
-    def capture_image(self, file_path):
-        logger.info("Capturing image to: %s", file_path)
-        self.view.lv.pause() # stop updating LV
-        self.camera.capture_image(file_path)
-        self.camera.start_preview() #start gahtering ASAP new previews in separate thread
-        #if self.upload_to:
-        #    upload_image_async(self.upload_to, file_path)
+    def capture_image_worker(self):
+        while self.is_running:
+            image_number, image_name, prev_name = self.capture_names.get()
+
+            # (1) capture the image
+            logger.info("capture_image_worker: capturing image to: %s", image_name)
+            self.camera.pause_preview()
+            #self.view.lv.pause() # stop updating LV
+            self.camera.capture_image(image_name)
+            self.camera.start_preview() # resume previews ASAP
+
+            # (2) load captured images and scale them
+            logger.debug("capture_image_worker: reading and scalling images")
+            img = pygame.image.load(image_name).convert()
+            img_lv = pygame.transform.scale(img, (view.LivePreview.WIDTH, view.LivePreview.HEIGHT))
+            img_prev = pygame.transform.scale(img_lv, (view.SmallPhotoPreview.WIDTH, view.SmallPhotoPreview.HEIGHT))
+
+            # (3) save the scalled preview
+            pygame.image.save(img_prev, prev_name)
+
+            # (4) finish the task and send the results
+            logger.debug("capture_image_worker: DONE")
+            self.capture_names.task_done()
+            self.model.set_current_session_imgs(image_number, (img, img_lv, img_prev))
+
+            # (5) set the preview in the view
+            self.view.main_previews[image_number].draw_image(img_prev)
+            #self.view.lv.draw_image(img_lv)
+
+    def capture_image(self, image_number, full_file_path, prev_file_path):
+        self.capture_names.put((image_number, full_file_path, prev_file_path))
 
     def print_camera_preview(self):
         img = self.view.lv.image
@@ -98,19 +134,8 @@ class PhotoBoothController(object):
         img = pygame.image.load(file_path).convert()
         return img
 
-    def scale_image_for_lv(self, image):
-        return pygame.transform.scale(image, (view.LivePreview.WIDTH, view.LivePreview.HEIGHT))
-
-    def scale_and_save_image_for_preview(self, image, file_path):
-        img_prev = pygame.transform.scale(image, (view.SmallPhotoPreview.WIDTH, view.SmallPhotoPreview.HEIGHT))
-        pygame.image.save(img_prev, file_path)
-        return img_prev
-
-    def notify_captured_image(self, image_number, img_lv, img_prev):
-        self.view.main_previews[image_number].draw_image(img_prev)
-        self.view.lv.draw_image(img_lv)
-
     def animate_montage(self, img_list):
+        self.view.lv.pause()
         self.view.lv.start_animate(img_list, self.conf.montage_fps)
 
     def notify_idle_previews_changed(self):

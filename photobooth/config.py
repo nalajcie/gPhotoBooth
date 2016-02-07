@@ -15,7 +15,7 @@ default_config = {
     'flip_preview': True,
     'initial_countdown_secs': 3,
     'midphoto_countdown_secs': 3,
-    'image_display_secs': 2,
+    'image_display_secs': 0,
     'montage_display_secs': 5,
     'idle_secs': 30,
     'montage_fps': 4,

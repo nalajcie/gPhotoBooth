@@ -71,11 +71,13 @@ class GPhotoCamera(object):
                 self.preview_jpegs.task_done()
 
             file = self.preview_jpegs.get()
-            logger.debug("LOADPREVIEW: loading frame")
+            #logger.debug("LOADPREVIEW: loading frame")
             picture = pygame.image.load(file).convert()
             self.preview_jpegs.task_done()
             self.curr_preview = picture
 
+    def pause_preview(self):
+        self.is_paused = True
 
     def start_preview(self):
         """ LiveView initialistation if needed """
@@ -102,8 +104,10 @@ class GPhotoCamera(object):
 
     def capture_image(self, file_path):
         """ Full-size image capture and save to destination """
+        logger.debug("capture_image")
         with self.camera_lock:
             self.cam.capture_image(file_path)
+        logger.debug("capture_image END")
 
     def close(self):
         """ Camera closing """
