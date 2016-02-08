@@ -139,7 +139,7 @@ class ShutterSprite(pygame.sprite.Sprite):
         canvas.blit(self.image, (0,0))
 
 
-picture = pygame.image.load("../capture_preview.jpg")
+picture = pygame.image.load("dummy-preview.jpg")
 
 size = picture.get_size()
 pygame.display.set_mode(size)
