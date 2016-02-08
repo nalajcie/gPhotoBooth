@@ -4,7 +4,6 @@ from threading import Thread,Lock,Condition
 from Queue import Queue
 
 import pygame
-import shutil
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
@@ -122,8 +121,12 @@ class GPhotoCamera(object):
 
 
 class DummyCamera(object):
+    # this is only for ease of development, assume always taking 4 pictures
+    CAPTURE_COUNT = 4
+
     def __init__(self):
         print "CAMERA: DummyCamera serving only static JPEGs"
+        self.curr_capture = 0
         pass
 
     def start_preview(self):
@@ -140,7 +143,22 @@ class DummyCamera(object):
         return picture
 
     def capture_image(self, file_path):
-        shutil.copyfile("dev/dummy-capture.jpg", file_path)
+        """
+        Captures the image, for better testing this is a full-size img.
+        Apply some simple transformation to differ the 4 captured images (GussianBlur in here
+        """
+        from PIL import Image,ImageFilter
+
+        im = Image.open("dev/dummy-capture.jpg")
+        radius = (self.CAPTURE_COUNT - self.curr_capture - 1) * 20
+        im = im.filter(ImageFilter.GaussianBlur(radius))
+        im.save(file_path)
+
+        self.curr_capture = (self.curr_capture + 1) % self.CAPTURE_COUNT
+
+        # the old way, for reference:
+        # import shutil
+        # shutil.copyfile("dev/dummy-capture.jpg", file_path)
 
     def close(self):
         pass
