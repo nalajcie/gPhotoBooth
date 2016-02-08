@@ -132,12 +132,15 @@ class DummyCamera(object):
     def stop_preview(self):
         pass
 
+    def pause_preview(self):
+        pass
+
     def capture_preview(self):
-        picture = pygame.image.load("dummy-preview.jpg").convert()
+        picture = pygame.image.load("dev/dummy-preview.jpg").convert()
         return picture
 
     def capture_image(self, file_path):
-        shutil.copyfile("dummy-preview.jpg", file_path)
+        shutil.copyfile("dev/dummy-capture.jpg", file_path)
 
     def close(self):
         pass
