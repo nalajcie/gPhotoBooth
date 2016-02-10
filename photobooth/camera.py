@@ -54,9 +54,8 @@ class GPhotoCamera(object):
             with self.camera_lock:
                 cfile = self.cam.capture_preview()
                 picture = StringIO(cfile.get_data())
-                #picture = pygame.image.load(StringIO(cfile.get_data())).convert()
                 self.preview_jpegs.put(picture)
-                logger.debug("capture_worker: preview captured!, queue size: %d" % self.preview_jpegs.qsize())
+                #logger.debug("capture_worker: preview captured!, queue size: %d" % self.preview_jpegs.qsize())
 
     def loadpreview_worker(self):
         """

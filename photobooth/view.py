@@ -183,6 +183,7 @@ class LivePreview(PhotoPreview):
         super(LivePreview, self).draw_image(image)
 
     def start(self):
+        self.stop_animate()
         self.is_started = True
 
     def stop(self):

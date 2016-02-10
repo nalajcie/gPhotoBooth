@@ -22,6 +22,7 @@ class PhotoBoothController(object):
         self.camera = camera
         self.printer = printer
 
+        # platform and pygame
         logger.info("PLATFORM: %s" % platform.running_platform)
         platform.platform_init()
         pygame.init()
@@ -29,22 +30,23 @@ class PhotoBoothController(object):
 
         self.clock = pygame.time.Clock()
 
-        #TODO: add hardware button listener
+        # peripherials
         self.button = platform.Button()
         self.lights = platform.Lights()
-
         self.button.register_callback(self.button_callback)
 
+        # view nad model
         self.is_running = False
         self.view = view.PygView(self, self.conf, self.camera)
         self.model = model.PhotoBoothModel(self)
         self.model.load_from_disk()
 
-        self.next_fps_update_ticks = 0
-
+        # capture thread
         self.capture_names = Queue(maxsize=0)
         self.thread_capture = Thread(target=self.capture_image_worker)
         self.thread_capture.setDaemon(True)
+
+        self.next_fps_update_ticks = 0
 
     def __del__(self):
         platform.platform_deinit()

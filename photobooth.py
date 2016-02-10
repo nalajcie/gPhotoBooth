@@ -62,8 +62,8 @@ if __name__ == '__main__':
     else:
         printer = printer.NullPrinter()
 
-    booth = controller.PhotoBoothController(conf, cam, printer)
     try:
+        booth = controller.PhotoBoothController(conf, cam, printer)
         booth.run()
     except Exception:
         logger.exception("Unhandled exception!")
