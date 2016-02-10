@@ -21,9 +21,13 @@ Specific commands are for ubuntu/debian based systems.
   ~$ sudo apt-get install libgphoto2-6
   ```
 
+4. disabling system services grabbing gphoto2. For Pi comment out (using '#') the lines in this file:
+  ``` bash
+  sudo vim /usr/share/dbus-1/services/org.gtk.Private.GPhoto2VolumeMonitor.service
+  ```
+
 ## Configuration
-TODO
-For now configuration is hardcoded at the beginning of photobooth.py or provided as commandline params (see usage).
+For now configuration is hardcoded in photobooth/config.py and/or provided as commandline params (see usage).
 
 ## Running
 1. gPhoto2 Live view demo (for testing if Your camera works with gPhoto2)
