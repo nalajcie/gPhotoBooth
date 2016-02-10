@@ -1,6 +1,7 @@
 import base
 import RPi.GPIO as GPIO
 import time
+import subprocess
 from threading import Thread
 
 # Note: this is actually a Pi2, see the wiring diagram for the details
@@ -8,7 +9,9 @@ from threading import Thread
 
 def platform_init():
     GPIO.setmode(GPIO.BOARD)
-    #TODO: set GPIO 16/17 to alt3
+    # enable RTS/CTS pins for ttyAMA0 (needed by ThermalPrinter)
+    subprocess.call(["gpio", "-g", "mode", "16", "alt3"])
+    subprocess.call(["gpio", "-g", "mode", "17", "alt3"])
 
 def platform_deinit():
     GPIO.cleanup()

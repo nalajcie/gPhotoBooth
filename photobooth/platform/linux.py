@@ -3,6 +3,9 @@ import base
 def platform_init():
     pass
 
+def platform_deinit():
+    pass
+
 class Button(base.Peripherial):
     """
     We're not supporting external button on linux.
