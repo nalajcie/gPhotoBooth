@@ -2,6 +2,7 @@ import os
 import sys
 import pygame
 import model, view
+import platform
 from threading import Thread,Lock,Condition
 from Queue import Queue
 
@@ -14,17 +15,25 @@ class PhotoBoothController(object):
     QUIT_KEYS = pygame.K_ESCAPE, pygame.K_q
     BUTTON_KEY= pygame.K_SPACE,
 
+    BUTTONPUSHEVENT = pygame.USEREVENT + 2
+
     def __init__(self, config, camera, printer):
         self.conf = config
         self.camera = camera
         self.printer = printer
 
+        logger.info("PLATFORM: %s" % platform.running_platform)
+        platform.platform_init()
         pygame.init()
         pygame.mouse.set_visible(False)
 
         self.clock = pygame.time.Clock()
 
         #TODO: add hardware button listener
+        self.button = platform.Button()
+        self.lights = platform.Lights()
+
+        self.button.register_callback(self.button_callback)
 
         self.is_running = False
         self.view = view.PygView(self, self.conf, self.camera)
@@ -37,11 +46,16 @@ class PhotoBoothController(object):
         self.thread_capture = Thread(target=self.capture_image_worker)
         self.thread_capture.setDaemon(True)
 
+    def __del__(self):
+        platform.platform_deinit()
+
     def run(self):
         """Main loop"""
 
         self.is_running = True
         self.thread_capture.start()
+        self.button.start()
+        self.lights.start()
 
         while self.is_running:
             self.clock.tick(self.view.fps)
@@ -63,12 +77,18 @@ class PhotoBoothController(object):
             self.model.quit()
         pygame.quit()
 
+    def button_callback(self, button_channel):
+        button_event = pygame.event.Event(self.BUTTONPUSHEVENT)
+        pygame.event.post(button_event)
+
     def process_events(self):
         """ Returns wheter "THE BUTTON" has been pressed """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.is_running = False
-            if event.type == pygame.KEYDOWN:
+            elif event.type == self.BUTTONPUSHEVENT:
+                return True
+            elif event.type == pygame.KEYDOWN:
                 if event.key in PhotoBoothController.QUIT_KEYS:
                     self.is_running = False
                 elif event.key in PhotoBoothController.BUTTON_KEY:
