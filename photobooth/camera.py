@@ -147,13 +147,22 @@ class DummyCamera(object):
         Apply some simple transformation to differ the 4 captured images (GussianBlur in here
         """
         from PIL import Image,ImageFilter
+        import platform
 
-        im = Image.open("dev/dummy-capture.jpg")
-        radius = (self.CAPTURE_COUNT - self.curr_capture - 1) * 20
+        # gaussian blur is really slow on Pi, hack to be able to use DummyCamera
+        if platform.get_platform() == platform.PI:
+            im = Image.open("dev/dummy-preview.jpg")
+            gaussian_scaler = 5
+        else:
+            im = Image.open("dev/dummy-capture.jpg")
+            gaussian_scaler = 20
+
+        radius = (self.CAPTURE_COUNT - self.curr_capture - 1) * gaussian_scaler
         im = im.filter(ImageFilter.GaussianBlur(radius))
         im.save(file_path)
 
         self.curr_capture = (self.curr_capture + 1) % self.CAPTURE_COUNT
+        logger.debug("(6)")
 
         # the old way, for reference:
         # import shutil

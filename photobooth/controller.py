@@ -79,7 +79,7 @@ class PhotoBoothController(object):
             self.model.quit()
         pygame.quit()
 
-    def button_callback(self, button_channel):
+    def button_callback(self):
         button_event = pygame.event.Event(self.BUTTONPUSHEVENT)
         pygame.event.post(button_event)
 
