@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument("-D", "--debug",        help="Use debug configuration for easier development", action="store_true")
     parser.add_argument("-f", "--fullscreen",   help="Use fullscreen mode", action="store_true")
     parser.add_argument("-P", "--printer",      help="Use Thermal printer (default: NullPrinter)", action="store_true")
-    parser.add_argument("-u", "--upload_to",    help="Url to upload images to")
+    parser.add_argument("-u", "--upload",       help="Upload images to Tumblr", action="store_true")
     args = parser.parse_args()
 
     logger.info("Args were: %s", args)
@@ -44,6 +44,8 @@ if __name__ == '__main__':
     conf.fullscreen = args.fullscreen
     conf.save_path = args.save_path
     conf.thermal_printer = args.printer
+    if args.upload:
+        conf.read_tumblr_config()
     logger.info("Full configuration: %s", conf)
 
     # setup CAMERA

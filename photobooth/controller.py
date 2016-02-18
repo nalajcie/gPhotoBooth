@@ -118,7 +118,7 @@ class PhotoBoothController(object):
 
     def capture_image_worker(self):
         while self.is_running:
-            image_number, image_name, prev_name = self.capture_names.get()
+            image_number, image_name, medium_name, prev_name = self.capture_names.get()
 
             # (1) capture the image
             logger.info("capture_image_worker: capturing image to: %s", image_name)
@@ -139,22 +139,23 @@ class PhotoBoothController(object):
             self.view.main_previews[image_number].set_image(img_prev)
             self.view.main_previews[image_number].end_overlay()
 
-            # (4) save the scalled preview
+            # (4) save the scalled images
             pygame.image.save(img_prev, prev_name)
+            pygame.image.save(img_lv, medium_name)
 
             # (5) finish the task and send the results
             logger.debug("capture_image_worker: DONE")
             self.capture_names.task_done()
             self.model.set_current_session_imgs(image_number, (img, img_lv, img_prev))
 
-    def capture_image(self, image_number, full_file_path, prev_file_path):
+    def capture_image(self, image_number, full_file_path, medium_file_path, prev_file_path):
         # view: capture begin animation
         self.view.lv.pause()
         self.view.lv.begin_overlay()
         self.view.main_previews[image_number].begin_overlay()
 
         # schedule worker thread to capture image
-        self.capture_names.put((image_number, full_file_path, prev_file_path))
+        self.capture_names.put((image_number, full_file_path, medium_file_path, prev_file_path))
 
     def print_camera_preview(self):
         img = self.view.lv.image

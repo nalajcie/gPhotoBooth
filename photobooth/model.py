@@ -71,7 +71,6 @@ class CountdownState(TimedState):
 class TakePictureState(TimedState):
     def __init__(self, model):
         super(TakePictureState, self).__init__(model, model.conf.image_display_secs)
-        #TODO: display animation while capturing image
         image_name = self.take_picture()
         logger.debug("TakePictureState: taking picutre: %s" % image_name)
         self.model.controller.set_text("Nice!")
@@ -89,8 +88,9 @@ class TakePictureState(TimedState):
     def take_picture(self):
         self.model.photo_count += 1
         image_name = self.booth_model.get_image_name(self.model.id, self.model.photo_count)
+        image_medium_name = self.booth_model.get_image_medium_name(self.model.id, self.model.photo_count)
         image_prev_name = self.booth_model.get_image_prev_name(self.model.id, self.model.photo_count)
-        self.model.controller.capture_image(self.model.photo_count, image_name, image_prev_name)
+        self.model.controller.capture_image(self.model.photo_count, image_name, image_medium_name, image_prev_name)
         return image_name
 
 class ShowSessionMontageState(TimedState):
@@ -147,17 +147,19 @@ class PhotoSessionModel(object):
         return not self.capture_start and time.time() - self.session_start > self.conf.idle_secs
 
     def get_finished_session_model(self):
-        return FinishedSessionModel(self.booth_model, self.id, [ sizes[2] for k, sizes in self.images.items() ])
+        medium_image_names = [ self.booth_model.get_image_medium_name(self.id, photo_no) for photo_no in xrange(1, 5)]
+        return FinishedSessionModel(self.booth_model, self.id, [ sizes[2] for k, sizes in self.images.items() ], medium_image_names)
 
     def finished(self):
         return self.state is None
 
 class FinishedSessionModel(object):
     """ finised session previews to be displayed in idle screen """
-    def __init__(self, booth_model, sess_id, img_list):
+    def __init__(self, booth_model, sess_id, img_list, medium_img_paths):
         self.id = sess_id
         self.booth_model = booth_model
         self.img_list = img_list
+        self.medium_img_paths = medium_img_paths
 
     @classmethod
     def fromDir(cls, booth_model, sess_id):
@@ -171,7 +173,7 @@ class FinishedSessionModel(object):
                 #logger.exception(e)
                 raise ValueError # error while opening/reading file, incomplete photo session
 
-        return cls(booth_model, sess_id, img_list)
+        return cls(booth_model, sess_id, img_list, None) # do not care about medium image paths
 
 
 class PhotoBoothModel(object):
@@ -231,6 +233,9 @@ class PhotoBoothModel(object):
 
     def get_image_name(self, sess_id, count):
         return os.path.join(self.conf.save_path, str(sess_id), str(count) + '.jpg')
+
+    def get_image_medium_name(self, sess_id, count):
+        return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_medium.jpg')
 
     def get_image_prev_name(self, sess_id, count):
         return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_prev.jpg')

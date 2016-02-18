@@ -2,6 +2,8 @@
 
 ### CONFGIURATION ###
 # this is the default configuration, some values can be changed using commandline parameters
+# TODO: read out custom configuration from YAML config file
+
 default_config = {
     # display-related consts
     'screen_width': 1280,
@@ -71,3 +73,17 @@ class Config(object):
         conf = cls(**default_config)
         conf.__dict__.update(**debug_override)
         return conf
+
+    def read_tumblr_config(self):
+        import yaml
+        import os
+        yaml_path = os.path.expanduser('~') + '/.tumblr'
+        if not os.path.exists(yaml_path):
+            raise Exception("Please use interactive_console.py in local_modules/pytumblr to save ~/.tumblr config file with Your OAuth authentication")
+
+        yaml_file = open(yaml_path, "r")
+        tokens = yaml.safe_load(yaml_file)
+        yaml_file.close()
+
+        for (k, v) in tokens.iteritems():
+            self.__dict__['tumblr_' + k] = v
