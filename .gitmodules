@@ -4,3 +4,6 @@
 [submodule "local_modules/thermal_printer"]
 	path = local_modules/thermal_printer
 	url = https://github.com/nalajcie/Python-Thermal-Printer.git
+[submodule "local_modules/pytumblr"]
+	path = local_modules/pytumblr
+	url = https://github.com/tumblr/pytumblr
