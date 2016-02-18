@@ -22,7 +22,7 @@ int main(void)
     */
     struct timespec t1, t2;
     clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
-    SDL_RWops *rwop = SDL_RWFromFile("prev.jpg","rb");
+    SDL_RWops *rwop = SDL_RWFromFile("dummy-preview.jpg","rb");
     image = IMG_LoadJPG_RW(rwop);
     clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
     if (image == NULL) {
