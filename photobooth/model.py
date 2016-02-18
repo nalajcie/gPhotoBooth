@@ -97,9 +97,13 @@ class ShowSessionMontageState(TimedState):
     def __init__(self, model):
         super(ShowSessionMontageState, self).__init__(model, model.conf.montage_display_secs)
 
-        img_lv_list = [ sizes[1] for num, sizes in self.model.images.items()  ]
+        img_lv_list = [sizes[1] for sizes in self.model.images.itervalues()]
         self.model.controller.stop_live_view()
         self.model.controller.enqueue_animate_montage(img_lv_list)
+
+        # start work on finished session
+        finished_sess = self.model.get_finished_session_model()
+        self.model.controller.notify_finished_session(finished_sess)
 
     def update(self, button_pressed):
         if self.time_up():
@@ -139,16 +143,20 @@ class PhotoSessionModel(object):
         self.session_start = time.time()
 
         self.images = dict()
+        self.href = None
 
     def update(self, button_pressed):
+        """ model updating func - transitins to next states """
         self.state = self.state.update(button_pressed)
 
     def idle(self):
+        """ true/false idle timeout check """
         return not self.capture_start and time.time() - self.session_start > self.conf.idle_secs
 
     def get_finished_session_model(self):
-        medium_image_names = [ self.booth_model.get_image_medium_name(self.id, photo_no) for photo_no in xrange(1, 5)]
-        return FinishedSessionModel(self.booth_model, self.id, [ sizes[2] for k, sizes in self.images.items() ], medium_image_names)
+        medium_image_names = [self.booth_model.get_image_medium_name(self.id, photo_no) for photo_no in xrange(1, 5)]
+        lv_images = [sizes[2] for sizes in self.images.itervalues()]
+        return FinishedSessionModel(self.booth_model, self.id, lv_images, medium_image_names)
 
     def finished(self):
         return self.state is None
@@ -162,7 +170,7 @@ class FinishedSessionModel(object):
         self.medium_img_paths = medium_img_paths
 
     @classmethod
-    def fromDir(cls, booth_model, sess_id):
+    def from_dir(cls, booth_model, sess_id):
         img_list = []
         for num in xrange(1, 5):
             img_name = booth_model.get_image_prev_name(sess_id, num)
@@ -199,7 +207,7 @@ class PhotoBoothModel(object):
                     sess_id = None
                 if sess_id:
                     try:
-                        sess = FinishedSessionModel.fromDir(self, sess_id)
+                        sess = FinishedSessionModel.from_dir(self, sess_id)
                         all_sessions.append(sess)
                         logger.info("PHOTO_SESS : '%s' = %s" % (d, sess))
                     except ValueError:

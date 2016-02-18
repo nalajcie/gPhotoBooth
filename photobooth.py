@@ -44,7 +44,8 @@ if __name__ == '__main__':
     conf.fullscreen = args.fullscreen
     conf.save_path = args.save_path
     conf.thermal_printer = args.printer
-    if args.upload:
+    if args.upload or config.upload:
+        conf.upload = True
         conf.read_tumblr_config()
     logger.info("Full configuration: %s", conf)
 

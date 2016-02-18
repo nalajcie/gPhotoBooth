@@ -1,10 +1,10 @@
 import os
-import sys
 import pygame
-import model, view
+import model, view, upload
 import platform
-from threading import Thread,Lock,Condition
+from threading import Thread
 from Queue import Queue
+import multiprocessing
 
 
 import logging
@@ -46,6 +46,13 @@ class PhotoBoothController(object):
         self.thread_capture = Thread(target=self.capture_image_worker)
         self.thread_capture.setDaemon(True)
 
+        # upload background process
+        if self.conf.upload:
+            self.upload_send_pipe, child_recv_pipe = multiprocessing.Pipe()
+            child_send_pipe, self.upload_recv_pipe = multiprocessing.Pipe()
+            self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, child_send_pipe, child_recv_pipe))
+            self.process_upload.daemon = True
+
         self.next_fps_update_ticks = 0
 
     def __del__(self):
@@ -58,6 +65,9 @@ class PhotoBoothController(object):
         self.thread_capture.start()
         self.button.start()
         self.lights.start()
+
+        if self.conf.upload:
+            self.process_upload.start()
 
         while self.is_running:
             self.clock.tick(self.view.fps)
@@ -174,3 +184,9 @@ class PhotoBoothController(object):
             #logger.debug("preview[%d] = %s <- %s" % (prev_num, self.view.idle_previews[prev_num], img_list))
             self.view.idle_previews[prev_num].start_animate(img_list, 0) # if fps == 0 -> sync whith display FPS
             prev_num += 1
+
+    def notify_finished_session(self, sess):
+        """ Start work related with finished session processing - uploading and printing"""
+        #TODO: start printing
+        if self.conf.upload:
+            self.upload_send_pipe.send((sess.id, sess.medium_img_paths))

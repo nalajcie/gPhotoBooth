@@ -39,6 +39,11 @@ default_config = {
     'bottom_margin': 20,
     'top_margin': 20,
 
+    # tumblr
+    'upload': False, # disable uploading by default
+    'tumblr_blogname': 'donothavetimeforthis',
+    # note: credentials are kept in ~/.tumblr
+
     # some debug vars
     'fps_update_ms': 2000
 }
