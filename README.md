@@ -13,6 +13,7 @@ Specific commands are for ubuntu/debian based systems.
 
 2. python modules required
   ```bash
+  sudo apt-get install imagemagick          # for creating GIFs to upload
   sudo apt-get install python-pygame        # for display
   sudo apt-get install python-yaml          # for parsing config files
   sudo easy_install local_modules/pytumblr  # for uploading to tumblr
