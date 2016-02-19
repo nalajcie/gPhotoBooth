@@ -25,7 +25,8 @@ logger.addHandler(stdout_log_handler)
 logger.setLevel(logging.DEBUG)
 
 
-if __name__ == '__main__':
+def main():
+    """ main function """
     parser = argparse.ArgumentParser()
     parser.add_argument("save_path", help="Location to save images")
     parser.add_argument("-d", "--dummy",        help="Use dummy camera instead of GPhoto interface", action="store_true")
@@ -55,18 +56,18 @@ if __name__ == '__main__':
             cam = camera.DummyCamera()
         else:
             cam = camera.GPhotoCamera()
-    except ValueError, e:
+    except ValueError:
         logger.exception("Camera could not be initialised, exiting!")
         sys.exit(-1)
 
     # setup PRINTER
     if conf.thermal_printer:
-        printer = printer.ThermalPrinter()
+        printer_inst = printer.ThermalPrinter()
     else:
-        printer = printer.NullPrinter()
+        printer_inst = printer.NullPrinter()
 
     try:
-        booth = controller.PhotoBoothController(conf, cam, printer)
+        booth = controller.PhotoBoothController(conf, cam, printer_inst)
         booth.run()
     except Exception:
         logger.exception("Unhandled exception!")
@@ -75,3 +76,6 @@ if __name__ == '__main__':
     finally:
         cam.close()
         logger.info("Finished successfully!")
+
+if __name__ == '__main__':
+    main()

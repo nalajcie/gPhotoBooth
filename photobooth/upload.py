@@ -6,11 +6,6 @@ import sys
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
-#stdout_log_handler = logging.StreamHandler(sys.stdout)
-#stdout_log_handler.setLevel(logging.WARN)
-#stdout_log_handler.setLevel(logging.DEBUG)
-#logger.addHandler(stdout_log_handler)
-#logger.setLevel(logging.DEBUG)
 
 GIF_FILENAME = "merge.gif"
 
@@ -42,7 +37,7 @@ def run(config, send_pipe, recv_pipe):
             # (1) create GIF
             start = time.time()
             gif_name = get_gif_filename(file_list[0])
-            cmd = ["convert", "-delay", "50", "-loop", "0"]
+            cmd = ["convert", "-delay", "20", "-loop", "0"]
             cmd.extend(file_list)
             cmd.append(gif_name)
             logger.debug("CMD: %s", cmd)

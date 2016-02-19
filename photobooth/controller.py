@@ -1,7 +1,9 @@
-import os
+""" Controlls the logic flow around the whole application """
 import pygame
-import model, view, upload
-import platform
+import photobooth.model as model
+import photobooth.view as view
+import photobooth.upload as upload
+import photobooth.platform as platform
 from threading import Thread
 from Queue import Queue
 import multiprocessing
@@ -11,6 +13,7 @@ import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
 
 class PhotoBoothController(object):
+    """ controlling the logic flow around the whole application """
 
     QUIT_KEYS = pygame.K_ESCAPE, pygame.K_q
     BUTTON_KEY= pygame.K_SPACE,
@@ -81,8 +84,8 @@ class PhotoBoothController(object):
                 pygame.display.set_caption(fps_str)
                 logger.debug(fps_str)
                 self.next_fps_update_ticks = pygame.time.get_ticks() + self.conf.fps_update_ms
-        else:
-            self.quit()
+
+        self.quit()
 
     def quit(self):
         if self.model:
@@ -108,9 +111,8 @@ class PhotoBoothController(object):
                 elif event.key == pygame.K_p: # for debugging
                     self.print_camera_preview()
                     return False
-                # TODO: add our userevent for external button
-        else:
-            return False
+
+        return False
 
     def start_live_view(self):
         self.camera.start_preview()

@@ -1,6 +1,6 @@
 from local_modules import piggyphoto
 from StringIO import StringIO
-from threading import Thread,Lock,Condition
+from threading import Thread, Lock, Condition
 from Queue import Queue
 
 import pygame
@@ -14,13 +14,13 @@ class GPhotoCamera(object):
         """ Camera initialisation """
         try:
             self.cam = piggyphoto.Camera()
-        except piggyphoto.libgphoto2error, e:
-            raise ValueError("GPhotoCamera could not be initialised: %s" % e.message)
+        except piggyphoto.libgphoto2error, exc:
+            raise ValueError("GPhotoCamera could not be initialised: %s" % exc.message)
         print "CAMERA: %s " % self.cam.abilities
 
         self.preview_jpegs = Queue(maxsize=0)
         self.preview_surfaces = Queue(maxsize=0)
-        self.curr_preview = pygame.Surface((1,1)) # will be overriden by real image
+        self.curr_preview = pygame.Surface((1, 1)) # will be overriden by real image
 
         # thread-safe objects
         self.paused = Condition()
@@ -68,9 +68,9 @@ class GPhotoCamera(object):
                 self.preview_jpegs.get()
                 self.preview_jpegs.task_done()
 
-            file = self.preview_jpegs.get()
+            file_io = self.preview_jpegs.get()
             #logger.debug("LOADPREVIEW: loading frame")
-            picture = pygame.image.load(file).convert()
+            picture = pygame.image.load(file_io).convert()
             self.preview_jpegs.task_done()
             self.curr_preview = picture
 
@@ -120,24 +120,29 @@ class GPhotoCamera(object):
 
 
 class DummyCamera(object):
-    # this is only for ease of development, assume always taking 4 pictures
+    """
+    this is only for ease of development, assume always taking 4 pictures
+    """
     CAPTURE_COUNT = 4
 
     def __init__(self):
         print "CAMERA: DummyCamera serving only static JPEGs"
         self.curr_capture = 0
-        pass
 
     def start_preview(self):
+        """ initiate grabbing previews """
         pass
 
     def stop_preview(self):
+        """ stop grabbing previews """
         pass
 
     def pause_preview(self):
+        """ stop grabbing previews, but do not deinit """
         pass
 
     def capture_preview(self):
+        """ return single preview frame """
         picture = pygame.image.load("dev/dummy-preview.jpg").convert()
         return picture
 
@@ -146,20 +151,20 @@ class DummyCamera(object):
         Captures the image, for better testing this is a full-size img.
         Apply some simple transformation to differ the 4 captured images (GussianBlur in here
         """
-        from PIL import Image,ImageFilter
-        import platform
+        from PIL import Image, ImageFilter
+        import photobooth.platform as platform
 
         # gaussian blur is really slow on Pi, hack to be able to use DummyCamera
         if platform.get_platform() == platform.PI:
-            im = Image.open("dev/dummy-preview.jpg")
+            image = Image.open("dev/dummy-preview.jpg")
             gaussian_scaler = 5
         else:
-            im = Image.open("dev/dummy-capture.jpg")
+            image = Image.open("dev/dummy-capture.jpg")
             gaussian_scaler = 20
 
         radius = (self.CAPTURE_COUNT - self.curr_capture - 1) * gaussian_scaler
-        im = im.filter(ImageFilter.GaussianBlur(radius))
-        im.save(file_path)
+        image = image.filter(ImageFilter.GaussianBlur(radius))
+        image.save(file_path)
 
         self.curr_capture = (self.curr_capture + 1) % self.CAPTURE_COUNT
         logger.debug("(6)")
@@ -169,5 +174,6 @@ class DummyCamera(object):
         # shutil.copyfile("dev/dummy-capture.jpg", file_path)
 
     def close(self):
+        """ deinit camera """
         pass
 

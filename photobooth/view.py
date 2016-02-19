@@ -7,12 +7,17 @@ class PhotoPreview(pygame.sprite.DirtySprite):
     """
     Generic photo preview, ancestor of all preview classes
     """
+    WIDTH = -1
+    HEIGHT = -1
+    BORDER = -1
+
     def __init__(self, group, conf, size, position, border_width):
         super(PhotoPreview, self).__init__(group)
         self.conf = conf
         self._layer = 4
-        self.border = border_width;
+        self.border = border_width
         self.size = (size[0] + 2 * border_width, size[1] + 2 * border_width)
+        self.dirty = 1
 
         # surface & positioning
         self.image = pygame.Surface(self.size)
@@ -42,7 +47,7 @@ class PhotoPreview(pygame.sprite.DirtySprite):
         return self.HEIGHT + 2 * self.BORDER
 
     def load_overlay_animation_frames(self, file_glob, begin, end, l):
-        for i in xrange (begin, end):
+        for i in xrange(begin, end):
             img = pygame.image.load(file_glob % i).convert_alpha()
             l.append(img)
 
@@ -63,9 +68,9 @@ class PhotoPreview(pygame.sprite.DirtySprite):
 
     def draw_rect(self):
         """ draws empty rectangle with the number in the middle of it"""
-        self.image.fill((0,0,0)) # black
+        self.image.fill((0, 0, 0)) # black
         if self.border:
-            pygame.draw.rect(self.image, self.conf.border_color, (0,0, self.size[0] - self.border / 2, self.size[1] - self.border / 2), self.border)
+            pygame.draw.rect(self.image, self.conf.border_color, (0, 0, self.size[0] - self.border / 2, self.size[1] - self.border / 2), self.border)
         #logger.debug("%s:  draw_rect()" % self)
         self.dirty = 1
 
@@ -131,7 +136,7 @@ class SmallPhotoPreview(PhotoPreview):
     """
     Small photo preview, displays empty frame at first, and a small picture afterwards
     """
-    WIDTH  = 200
+    WIDTH = 200
     HEIGHT = 133
     BORDER = 2
 
@@ -161,7 +166,7 @@ class LivePreview(PhotoPreview):
     """
     LiveView display from the camera
     """
-    WIDTH  = 848
+    WIDTH = 848
     HEIGHT = 560
     BORDER = 4
 
@@ -330,7 +335,7 @@ class PygView(object):
 
         left_offset = left_margin
         top_offset = (self.conf.screen_height - idle_total_height) / 2
-        for num in xrange (1, 17):
+        for num in xrange(1, 17):
             self.idle_previews[num] = SmallPhotoPreview(self.idleview_group, self.conf, (left_offset, top_offset), num)
             left_offset += SmallPhotoPreview.width() + self.conf.idle_space
             if num % 4 == 0:
@@ -348,14 +353,16 @@ class PygView(object):
     @idle.setter
     def idle(self, val):
         self.is_idle = val
-        logger.info("Idle: %s" % val)
-        self.canvas.blit(self.back_image, (0,0))
-        pygame.display.flip() # ensure we will update full screen, not only dirty rects
+        logger.info("Idle: %s", val)
+        self.canvas.blit(self.back_image, (0, 0))
+        # ensure we will update full screen, not only dirty rects
+        pygame.display.flip()
         if self.is_idle:
             self.idleview_group.update(1) # force_redraw = 1
             self.fps = self.conf.idle_fps
-            for pp in self.main_previews.values():
-                pp.reset()
+            self.lv.stop()
+            for preview in self.main_previews.values():
+                preview.reset()
         else:
             self.mainview_group.update(1) # force_redraw = 1
             self.fps = self.conf.working_fps
@@ -366,14 +373,14 @@ class PygView(object):
         if self.is_idle:
             self.idleview_group.update(0)
             #dirty_rects = self.idleview_group.draw(self.canvas)
-            dirty_rects += [ pp.draw(self.canvas) for pp in self.idle_previews.values() ]
-            dirty_rects += [ self.idle_textbox.draw(self.canvas) ]
+            dirty_rects += [pp.draw(self.canvas) for pp in self.idle_previews.values()]
+            dirty_rects += [self.idle_textbox.draw(self.canvas)]
         else:
             #dirty_rects = self.mainview_group.draw(self.canvas)
             self.mainview_group.update(0)
-            dirty_rects += [ self.lv.draw(self.canvas) ]
-            dirty_rects += [ pp.draw(self.canvas) for pp in self.main_previews.values() ]
-            dirty_rects += [ self.textbox.draw(self.canvas) ]
+            dirty_rects += [self.lv.draw(self.canvas)]
+            dirty_rects += [pp.draw(self.canvas) for pp in self.main_previews.values()]
+            dirty_rects += [self.textbox.draw(self.canvas)]
 
         #logger.debug("DIRTY RECTS: %s" % dirty_rects)
         pygame.display.update(dirty_rects)

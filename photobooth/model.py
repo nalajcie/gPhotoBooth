@@ -5,15 +5,21 @@ import datetime
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
 
+# this is the model, allow few public methods
+# pylint: disable=too-few-public-methods
+
 class SessionState(object):
+    """ Base class for PhotoSession state """
     def __init__(self, model):
         self.model = model
         self.booth_model = model.booth_model
 
-    def update(self, buttonPressed):
+    def update(self, button_pressed):
+        """ state update & transitin method """
         raise NotImplementedError("Update not implemented")
 
 class WaitingState(SessionState):
+    """ waiting for button push """
     def __init__(self, model):
         super(WaitingState, self).__init__(model)
         self.model.controller.start_live_view()
@@ -27,15 +33,21 @@ class WaitingState(SessionState):
 
 
 class TimedState(SessionState):
+    """ Base class for state with timeout """
     def __init__(self, model, timer_length_s):
         super(TimedState, self).__init__(model)
         self.timer = time.time() + timer_length_s
 
     def time_up(self):
+        """ helper to check for timeout """
         return self.timer <= time.time()
 
+    def update(self, button_pressed):
+        """ state update & transitin method """
+        raise NotImplementedError("Update not implemented")
 
 class CountdownState(TimedState):
+    """ counting down to the first/next photo """
     def __init__(self, session, countdown_time):
         super(CountdownState, self).__init__(session, countdown_time)
         self.capture_start = datetime.datetime.now()
@@ -48,6 +60,7 @@ class CountdownState(TimedState):
             return self
 
     def display_countdown(self):
+        """ as the name says... """
         time_remaining = self.timer - time.time()
 
         if time_remaining <= 0:
@@ -69,10 +82,11 @@ class CountdownState(TimedState):
 
 
 class TakePictureState(TimedState):
+    """ taking single picture """
     def __init__(self, model):
         super(TakePictureState, self).__init__(model, model.conf.image_display_secs)
         image_name = self.take_picture()
-        logger.debug("TakePictureState: taking picutre: %s" % image_name)
+        logger.debug("TakePictureState: taking picutre: %s", image_name)
         self.model.controller.set_text("Nice!")
 
     def update(self, button_pressed):
@@ -86,14 +100,17 @@ class TakePictureState(TimedState):
             return self
 
     def take_picture(self):
+        """ as the name says... """
         self.model.photo_count += 1
         image_name = self.booth_model.get_image_name(self.model.id, self.model.photo_count)
         image_medium_name = self.booth_model.get_image_medium_name(self.model.id, self.model.photo_count)
         image_prev_name = self.booth_model.get_image_prev_name(self.model.id, self.model.photo_count)
+
         self.model.controller.capture_image(self.model.photo_count, image_name, image_medium_name, image_prev_name)
         return image_name
 
 class ShowSessionMontageState(TimedState):
+    """ Showing animation at the end of the session """
     def __init__(self, model):
         super(ShowSessionMontageState, self).__init__(model, model.conf.montage_display_secs)
 
@@ -113,6 +130,7 @@ class ShowSessionMontageState(TimedState):
             return self
 
     def update_text(self):
+        """ updating funny text in the textarea """
         time_remaining = self.timer - time.time()
 
         int_time = int(time_remaining)
@@ -129,12 +147,13 @@ class PhotoSessionModel(object):
     """
     Single Photo Session model (holding global attributes) and state machine
     """
-    def __init__(self, photo_booth_model, id):
-        logger.info("Starting new photo session, id=%d" % id)
+    # pylint: disable=too-many-instance-attributes
+    def __init__(self, photo_booth_model, sess_id):
+        logger.info("Starting new photo session, id=%d", sess_id)
         self.booth_model = photo_booth_model
         self.controller = self.booth_model.controller
         self.conf = self.controller.conf
-        self.id = id
+        self.id = sess_id
 
         # global model variables used by different states
         self.state = WaitingState(self)
@@ -159,6 +178,7 @@ class PhotoSessionModel(object):
         return FinishedSessionModel(self.booth_model, self.id, lv_images, medium_image_names)
 
     def finished(self):
+        """ returns True if this session is finished """
         return self.state is None
 
 class FinishedSessionModel(object):
@@ -171,14 +191,14 @@ class FinishedSessionModel(object):
 
     @classmethod
     def from_dir(cls, booth_model, sess_id):
+        """ trying to create FinishedSession from directory """
         img_list = []
         for num in xrange(1, 5):
             img_name = booth_model.get_image_prev_name(sess_id, num)
             try:
                 img = booth_model.controller.load_captured_image(img_name)
                 img_list.append(img)
-            except Exception, e:
-                #logger.exception(e)
+            except Exception:
                 raise ValueError # error while opening/reading file, incomplete photo session
 
         return cls(booth_model, sess_id, img_list, None) # do not care about medium image paths
@@ -196,20 +216,21 @@ class PhotoBoothModel(object):
         self.finished_sessions = []
 
     def load_from_disk(self):
+        """ try to load FinishedSessions from the disk """
         all_sessions = []
-        for d in os.listdir(self.conf.save_path):
+        for dirname in os.listdir(self.conf.save_path):
             #logger.debug("SCANNING: '%s'" % d)
-            path = os.path.join(self.conf.save_path, d)
+            path = os.path.join(self.conf.save_path, dirname)
             if os.path.isdir(path):
                 try:
-                    sess_id = int(d)
+                    sess_id = int(dirname)
                 except ValueError:
                     sess_id = None
                 if sess_id:
                     try:
                         sess = FinishedSessionModel.from_dir(self, sess_id)
                         all_sessions.append(sess)
-                        logger.info("PHOTO_SESS : '%s' = %s" % (d, sess))
+                        logger.info("PHOTO_SESS : '%s' = %s", dirname, sess)
                     except ValueError:
                         #logger.debug("\t%d: incomplete session" % sess_id)
                         pass
@@ -221,11 +242,11 @@ class PhotoBoothModel(object):
         self.update_finished()
 
     def update(self, button_pressed):
+        """ updates current session """
         if self.current_sess:
             self.current_sess.update(button_pressed)
             if self.current_sess.finished():
                 self.end_session()
-                #self.start_new_session() # if previous session ended succsesfully, we will immediately start a new one
             elif self.current_sess.idle():
                 self.end_session()
 
@@ -234,28 +255,36 @@ class PhotoBoothModel(object):
                 self.start_new_session()
 
     def set_current_session_imgs(self, image_number, images):
+        """ add new images to the current session
+        (used by the controller after image capture) """
         self.current_sess.images[image_number] = images
 
     def get_session_dir(self, sess_id):
+        """ get session dir name """
         return os.path.join(self.conf.save_path, str(sess_id))
 
     def get_image_name(self, sess_id, count):
+        """ get full image file name """
         return os.path.join(self.conf.save_path, str(sess_id), str(count) + '.jpg')
 
     def get_image_medium_name(self, sess_id, count):
+        """ get medium image file name """
         return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_medium.jpg')
 
     def get_image_prev_name(self, sess_id, count):
+        """ get preview file name """
         return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_prev.jpg')
 
     def start_new_session(self):
+        """ work to be done when new session starts """
         logging.debug("PhotoSession START")
         os.mkdir(self.get_session_dir(self.next_photo_session))
         self.current_sess = PhotoSessionModel(self, self.next_photo_session)
-        self.next_photo_session += 1;
+        self.next_photo_session += 1
         self.controller.view.idle = False
 
     def end_session(self):
+        """ work to be done when session ends """
         logging.debug("PhotoSession END")
         if self.current_sess.finished():
             self.finished_sessions.append(self.current_sess.get_finished_session_model())
@@ -267,15 +296,16 @@ class PhotoBoothModel(object):
     def update_finished(self):
         """ update idle previews with finished sessions """
         self.finished_sessions = self.finished_sessions[-self.conf.idle_previews_cnt:]
-        logger.info("FINISED SESSIONS CNT: %d" % len(self.finished_sessions))
+        logger.info("FINISED SESSIONS CNT: %d", len(self.finished_sessions))
         self.controller.notify_idle_previews_changed()
 
     #generator!
     def get_idle_previews_image_lists(self):
+        """ generator for passing images to the view """
         for sess in reversed(self.finished_sessions):
             yield sess.img_list
 
     def quit(self):
-        # any cleaning needed - put it here
+        """ any cleaning needed - put it here """
         pass
 

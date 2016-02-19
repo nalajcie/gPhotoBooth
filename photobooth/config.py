@@ -71,15 +71,18 @@ class Config(object):
 
     @classmethod
     def default(cls):
+        """ returns the default configuration object """
         return cls(**default_config)
 
     @classmethod
     def debug(cls):
+        """ returns the debug configuration object """
         conf = cls(**default_config)
         conf.__dict__.update(**debug_override)
         return conf
 
     def read_tumblr_config(self):
+        """ tries to read tumblr auth config from ~/.tumblr file """
         import yaml
         import os
         yaml_path = os.path.expanduser('~') + '/.tumblr'
@@ -90,5 +93,5 @@ class Config(object):
         tokens = yaml.safe_load(yaml_file)
         yaml_file.close()
 
-        for (k, v) in tokens.iteritems():
-            self.__dict__['tumblr_' + k] = v
+        for (k, val) in tokens.iteritems():
+            self.__dict__['tumblr_' + k] = val
