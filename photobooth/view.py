@@ -236,7 +236,7 @@ class TextBox(PhotoPreview):
         self.image.convert()
         self.current_text = ""
 
-    def update(self, force_redraw):
+    def update(self, force_redraw=0):
         if force_redraw:
             self.dirty = 1
 

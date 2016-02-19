@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import pygame
-import math
 
 MAX_FPS=30
 DIR="../assets/shutter/big/"
