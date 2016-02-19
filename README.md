@@ -1,5 +1,6 @@
 # gPhotoBooth
 [![Code Climate](https://codeclimate.com/github/nalajcie/gPhotoBooth/badges/gpa.svg)](https://codeclimate.com/github/nalajcie/gPhotoBooth)
+[![Codacy Badge](https://api.codacy.com/project/badge/grade/9daa6d6c79d74de3b6708c928bc3c723)](https://www.codacy.com/app/nalajcie/gPhotoBooth)
 ## About
 Photobooth using any camera supported with libgphoto2. Using any other camera should be as easy as providing custom impelmentation of `Camera` class.
 
