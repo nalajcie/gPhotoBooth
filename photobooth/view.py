@@ -193,6 +193,7 @@ class LivePreview(PhotoPreview):
 
     def stop(self):
         self.is_started = False
+        self.set_image(None)
         self.draw_rect()
 
     def pause(self):
