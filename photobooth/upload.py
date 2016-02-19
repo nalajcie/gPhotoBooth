@@ -12,9 +12,11 @@ def get_gif_filename(file_name):
     return os.path.join(os.path.dirname(file_name), GIF_FILENAME)
 
 
-def run(config, send_pipe, recv_pipe):
+def run(config, pipe):
     """ we expect file list to be turned into GIF and uploaded """
     logger.info("uploader process has started")
+    serv_pipe, client_pipe = pipe
+    serv_pipe.close()
 
     # setup tumblr client
     client = pytumblr.TumblrRestClient(
@@ -26,7 +28,7 @@ def run(config, send_pipe, recv_pipe):
 
     while True:
         try:
-            sess_id, file_list = recv_pipe.recv()
+            sess_id, file_list = client_pipe.recv()
         except EOFError:
             break
 
@@ -55,15 +57,17 @@ def run(config, send_pipe, recv_pipe):
             logger.debug("posts: %s", created_post)
             logger.debug("posts time: %f seconds", (time.time() - start))
             logger.debug("short URL: %s", created_post['posts'][0]['short_url'])
-            send_pipe.send((sess_id, created_post['posts'][0]['short_url']))
+            client_pipe.send((sess_id, created_post['posts'][0]['short_url']))
 
             # (4) reupload GIF + upload remaining files
+            """
             start = time.time()
             imgs_to_upload = [gif_name]
             imgs_to_upload.extend(file_list)
             res = client.edit_post(config.tumblr_blogname, id=post['id'], data=imgs_to_upload)
             logger.debug("reupload result: %s", res)
             logger.debug("edit_post time: %f seconds", (time.time() - start))
+            """
             logger.info("uploading sess(%d) has finished", sess_id)
         except Exception:
             logger.exception("Uploader worker exception!")

@@ -51,9 +51,9 @@ class PhotoBoothController(object):
 
         # upload background process
         if self.conf.upload:
-            self.upload_send_pipe, child_recv_pipe = multiprocessing.Pipe()
-            child_send_pipe, self.upload_recv_pipe = multiprocessing.Pipe()
-            self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, child_send_pipe, child_recv_pipe))
+            pipe = multiprocessing.Pipe()
+            self.upload_pipe = pipe[0]
+            self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, pipe))
             self.process_upload.daemon = True
 
         self.next_fps_update_ticks = 0
@@ -90,6 +90,7 @@ class PhotoBoothController(object):
     def quit(self):
         if self.model:
             self.model.quit()
+        self.upload_pipe.close()
         pygame.quit()
 
     def button_callback(self):
@@ -192,4 +193,4 @@ class PhotoBoothController(object):
         """ Start work related with finished session processing - uploading and printing"""
         #TODO: start printing
         if self.conf.upload:
-            self.upload_send_pipe.send((sess.id, sess.medium_img_paths))
+            self.upload_pipe.send((sess.id, sess.medium_img_paths))
