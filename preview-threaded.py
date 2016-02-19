@@ -4,8 +4,6 @@ import pygame
 from StringIO import StringIO
 from Queue import Queue
 import threading
-import os
-import time
 
 ### FOR PROFILING
 PROFILING=0

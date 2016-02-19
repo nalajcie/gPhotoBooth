@@ -173,7 +173,8 @@ class PhotoBoothController(object):
         img = self.view.lv.image
         self.printer.print_image(img)
 
-    def load_captured_image(self, file_path):
+    @staticmethod
+    def load_captured_image(file_path):
         img = pygame.image.load(file_path).convert()
         return img
 

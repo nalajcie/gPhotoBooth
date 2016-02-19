@@ -2,7 +2,6 @@ import pytumblr
 import time
 import os
 import subprocess
-import sys
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
@@ -63,6 +62,7 @@ def run(config, send_pipe, recv_pipe):
             imgs_to_upload = [gif_name]
             imgs_to_upload.extend(file_list)
             res = client.edit_post(config.tumblr_blogname, id=post['id'], data=imgs_to_upload)
+            logger.debug("reupload result: %s", res)
             logger.debug("edit_post time: %f seconds", (time.time() - start))
             logger.info("uploading sess(%d) has finished", sess_id)
         except Exception:

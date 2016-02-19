@@ -2,8 +2,6 @@
 from local_modules import piggyphoto
 import pygame
 from StringIO import StringIO
-import os
-import time
 
 MAX_FPS=30
 

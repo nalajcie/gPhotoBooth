@@ -39,14 +39,15 @@ class PhotoPreview(pygame.sprite.DirtySprite):
         self.image_orig = None
 
     @classmethod
-    def width(self):
-        return self.WIDTH + 2 * self.BORDER
+    def width(cls):
+        return cls.WIDTH + 2 * cls.BORDER
 
     @classmethod
-    def height(self):
-        return self.HEIGHT + 2 * self.BORDER
+    def height(cls):
+        return cls.HEIGHT + 2 * cls.BORDER
 
-    def load_overlay_animation_frames(self, file_glob, begin, end, l):
+    @staticmethod
+    def load_overlay_animation_frames(file_glob, begin, end, l):
         for i in xrange(begin, end):
             img = pygame.image.load(file_glob % i).convert_alpha()
             l.append(img)
@@ -114,7 +115,7 @@ class PhotoPreview(pygame.sprite.DirtySprite):
             canvas.blit(self.image, self.rect)
             return self.rect
 
-    def update(self, force_redraw = 0):
+    def update(self, force_redraw=0):
         if force_redraw:
             self.dirty = 1
         if self.image_orig and self.is_overlay:
@@ -158,7 +159,7 @@ class SmallPhotoPreview(PhotoPreview):
         self.draw_rect()
         self.draw_number(self.number)
 
-    def update(self, force_redraw):
+    def update(self, force_redraw=0):
         super(SmallPhotoPreview, self).update(force_redraw)
 
 
@@ -204,7 +205,7 @@ class LivePreview(PhotoPreview):
         self.enqueued_anim = (img_list, fps)
         self.set_image(img_list[-1])
 
-    def update(self, force_redraw):
+    def update(self, force_redraw=0):
         if self.is_started:
             self.draw_flip_image(self.camera.capture_preview(), self.conf.flip_preview)
         elif self.enqueued_anim and not self.is_overlay:
@@ -245,9 +246,7 @@ class TextBox(PhotoPreview):
 
         self.current_text = text
         self.image.fill((0,0,0))
-        location = self.image.get_rect()
         line = self.font.render(text, True, self.conf.font_color)
-        line_height = self.font.get_linesize()
         line_pos = line.get_rect()
         line_pos.center = (self.rect.width / 2, self.rect.height / 2)
 
@@ -301,13 +300,13 @@ class PygView(object):
 
     def init_child_components(self):
         """ Create child graphics components """
-        width = self.conf.screen_width
-        height = self.conf.screen_height
+        screen_width = self.conf.screen_width
+        screen_height = self.conf.screen_height
 
         main_total_width = LivePreview.width() + self.conf.idle_space + SmallPhotoPreview.width()
         main_total_height = LivePreview.height() + self.conf.idle_space + TextBox.height()
-        left_margin = (self.conf.screen_width - main_total_width) / 2
-        top_margin = (self.conf.screen_height - main_total_height) / 2
+        left_margin = (screen_width - main_total_width) / 2
+        top_margin = (screen_height - main_total_height) / 2
 
         self.lv = LivePreview(self.mainview_group, self.conf, (left_margin, top_margin), self.camera)
 
@@ -324,7 +323,7 @@ class PygView(object):
 
         #TEXT BOX
         top_offset = top_margin + LivePreview.height() + self.conf.idle_space + TextBox.height() / 2
-        self.textbox = TextBox(self.mainview_group, self.conf, (main_total_width, TextBox.height()), (width / 2, top_offset))
+        self.textbox = TextBox(self.mainview_group, self.conf, (main_total_width, TextBox.height()), (screen_width / 2, top_offset))
 
         #idle previews
         self.idle_previews = dict()
@@ -332,10 +331,10 @@ class PygView(object):
 
         idle_total_width = SmallPhotoPreview.width() * 4 + self.conf.idle_space * 3
         idle_total_height = SmallPhotoPreview.height() * 4 + self.conf.idle_space * 4 + TextBox.height()
-        left_margin = (self.conf.screen_width - idle_total_width) / 2
+        left_margin = (screen_width - idle_total_width) / 2
 
         left_offset = left_margin
-        top_offset = (self.conf.screen_height - idle_total_height) / 2
+        top_offset = (screen_height - idle_total_height) / 2
         for num in xrange(1, 17):
             self.idle_previews[num] = SmallPhotoPreview(self.idleview_group, self.conf, (left_offset, top_offset), num)
             left_offset += SmallPhotoPreview.width() + self.conf.idle_space
@@ -343,7 +342,7 @@ class PygView(object):
                 left_offset = left_margin
                 top_offset += SmallPhotoPreview.height() + self.conf.idle_space
 
-        self.idle_textbox = TextBox(self.idleview_group, self.conf, (idle_total_width, TextBox.height()), (width / 2, top_offset + TextBox.height() / 2))
+        self.idle_textbox = TextBox(self.idleview_group, self.conf, (idle_total_width, TextBox.height()), (screen_width / 2, top_offset + TextBox.height() / 2))
         self.idle_textbox.draw_text("Push a button!")
 
 

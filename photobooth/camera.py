@@ -141,7 +141,8 @@ class DummyCamera(object):
         """ stop grabbing previews, but do not deinit """
         pass
 
-    def capture_preview(self):
+    @staticmethod
+    def capture_preview():
         """ return single preview frame """
         picture = pygame.image.load("dev/dummy-preview.jpg").convert()
         return picture
