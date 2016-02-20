@@ -14,6 +14,7 @@ class ThermalPrinter(object):
 
     def __init__(self):
         """ Printer initialisation """
+        #TODO: get uart connection from platform and config from our one file
         self.printer = Adafruit_Thermal.Adafruit_Thermal(timeout=5, config="printer.cfg")
 
     def print_image(self, img_pygame):
@@ -55,6 +56,6 @@ class NullPrinter(object):
 
     def print_session(self, sess):
         """ pretty-print the whole photosession """
-        #TODO
+        # no-op
         pass
 

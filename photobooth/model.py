@@ -134,13 +134,13 @@ class ShowSessionMontageState(TimedState):
         time_remaining = self.timer - time.time()
 
         int_time = int(time_remaining)
-        if int_time == 4:
+        if int_time == 8:
             self.model.controller.set_text("Generating GIF...")
-        elif int_time == 3:
+        elif int_time == 6:
             self.model.controller.set_text("Uploading...")
-        elif int_time == 2:
+        elif int_time == 4:
             self.model.controller.set_text("Printing...")
-        elif int_time == 1:
+        elif int_time == 2:
             self.model.controller.set_text("Enjoying time with You...")
 
 class PhotoSessionModel(object):
