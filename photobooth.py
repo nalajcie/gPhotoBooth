@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # enc: utf-8
+""" Photobooth main file """
 
 import sys
 import argparse
@@ -8,51 +9,62 @@ import logging
 from photobooth import controller, camera, config, printer
 
 
-### setup global logger
 
-logger = logging.getLogger('photobooth')
+def setup_logger():
+    """ setup global logger """
+    logger = logging.getLogger('photobooth')
 
-file_log_handler = logging.FileHandler('photobooth.log')
-formatter = logging.Formatter('%(asctime)s [%(module)s] %(levelname)s %(message)s')
-file_log_handler.setFormatter(formatter)
-logger.addHandler(file_log_handler)
+    file_log_handler = logging.FileHandler('photobooth.log')
+    formatter = logging.Formatter('%(asctime)s [%(module)s] %(levelname)s %(message)s')
+    file_log_handler.setFormatter(formatter)
+    logger.addHandler(file_log_handler)
 
-stdout_log_handler = logging.StreamHandler(sys.stdout)
+    stdout_log_handler = logging.StreamHandler(sys.stdout)
 #stdout_log_handler.setLevel(logging.WARN)
-stdout_log_handler.setLevel(logging.DEBUG)
-logger.addHandler(stdout_log_handler)
+    stdout_log_handler.setLevel(logging.DEBUG)
+    logger.addHandler(stdout_log_handler)
 
-logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG)
+    return logger
 
 
-def main():
-    """ main function """
+def parse_args():
+    """ commandline args parsing and config reading """
     parser = argparse.ArgumentParser()
     parser.add_argument("save_path", help="Location to save images")
-    parser.add_argument("-d", "--dummy",        help="Use dummy camera instead of GPhoto interface", action="store_true")
-    parser.add_argument("-D", "--debug",        help="Use debug configuration for easier development", action="store_true")
-    parser.add_argument("-f", "--fullscreen",   help="Use fullscreen mode", action="store_true")
-    parser.add_argument("-P", "--printer",      help="Use Thermal printer (default: NullPrinter)", action="store_true")
-    parser.add_argument("-u", "--upload",       help="Upload images to Tumblr", action="store_true")
+    parser.add_argument("-d", "--dummy", help="Use dummy camera instead of GPhoto interface", action="store_true")
+    parser.add_argument("-D", "--debug", help="Use debug configuration for easier development", action="store_true")
+    parser.add_argument("-f", "--fullscreen", help="Use fullscreen mode", action="store_true")
+    parser.add_argument("-P", "--printer", help="Use Thermal printer (default: NullPrinter)", action="store_true")
+    parser.add_argument("-u", "--upload", help="Upload images to Tumblr", action="store_true")
     args = parser.parse_args()
 
-    logger.info("Args were: %s", args)
     if args.debug:
         conf = config.Config.debug()
     else:
         conf = config.Config.default()
 
-    conf.fullscreen = args.fullscreen
+    conf.fullscreen |= args.fullscreen
     conf.save_path = args.save_path
-    conf.thermal_printer = args.printer
-    if args.upload or config.upload:
-        conf.upload = True
+    conf.thermal_printer |= args.printer
+    conf.dummy_camera |= args.dummy
+    conf.upload |= args.upload
+
+    if conf.upload:
         conf.read_tumblr_config()
+
+    return conf
+
+
+def main():
+    """ main function """
+    logger = setup_logger()
+    conf = parse_args()
     logger.info("Full configuration: %s", conf)
 
     # setup CAMERA
     try:
-        if args.dummy:
+        if conf.dummy_camera:
             cam = camera.DummyCamera()
         else:
             cam = camera.GPhotoCamera()
