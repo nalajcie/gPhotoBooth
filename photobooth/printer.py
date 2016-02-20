@@ -113,7 +113,7 @@ class ThermalPrinter(AbstractPrinter):
 
     def print_session(self, sess):
         """ pretty-print the whole photosession """
-        #TODO
+        #TODO: decide how to print the whole session
         pass
 
 class NullPrinter(AbstractPrinter):
@@ -134,10 +134,10 @@ class NullPrinter(AbstractPrinter):
         img = img.transpose(Image.ROTATE_90)#.transpose(Image.FLIP_TOP_BOTTOM)
 
         logger.debug("OLDSIZE: (%d, %d)", img.size[0], img.size[1])
-        if img.size[0] > self.MAX_WIDTH:
-            newsize = (self.MAX_WIDTH, int(float(img.size[1]) / (float(img.size[0]) / self.MAX_WIDTH)))
-            logger.debug("NEWSIZE: (%d, %d)", newsize[0], newsize[1])
-            img = img.resize(newsize, Image.ANTIALIAS)
+        #if img.size[0] > self.MAX_WIDTH:
+        #    newsize = (self.MAX_WIDTH, int(float(img.size[1]) / (float(img.size[0]) / self.MAX_WIDTH)))
+        #    logger.debug("NEWSIZE: (%d, %d)", newsize[0], newsize[1])
+        #    img = img.resize(newsize, Image.ANTIALIAS)
 
         # PIL algorithm: convert to greyscale then convert to mono with dithering
         # img = img.convert('1')

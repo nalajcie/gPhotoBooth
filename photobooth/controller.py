@@ -165,14 +165,15 @@ class PhotoBoothController(object):
             self.capture_names.task_done()
             self.model.set_current_session_imgs(image_number, (img, img_lv, img_prev))
 
-    def capture_image(self, image_number, full_file_path, medium_file_path, prev_file_path):
+    def capture_image(self, image_number, file_paths):
         # view: capture begin animation
         self.view.lv.pause()
         self.view.lv.begin_overlay()
         self.view.main_previews[image_number].begin_overlay()
 
         # schedule worker thread to capture image
-        self.capture_names.put((image_number, full_file_path, medium_file_path, prev_file_path))
+        obj = (image_number, file_paths[0], file_paths[1], file_paths[2])
+        self.capture_names.put(obj)
 
     def print_camera_preview(self):
         img = self.view.lv.image

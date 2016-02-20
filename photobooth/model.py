@@ -102,12 +102,10 @@ class TakePictureState(TimedState):
     def take_picture(self):
         """ as the name says... """
         self.model.photo_count += 1
-        image_name = self.booth_model.get_image_name(self.model.id, self.model.photo_count)
-        image_medium_name = self.booth_model.get_image_medium_name(self.model.id, self.model.photo_count)
-        image_prev_name = self.booth_model.get_image_prev_name(self.model.id, self.model.photo_count)
+        image_names = self.booth_model.get_image_names_all(self.model.id, self.model.photo_count)
 
-        self.model.controller.capture_image(self.model.photo_count, image_name, image_medium_name, image_prev_name)
-        return image_name
+        self.model.controller.capture_image(self.model.photo_count, image_names)
+        return image_names[0]
 
 class ShowSessionMontageState(TimedState):
     """ Showing animation at the end of the session """
@@ -173,7 +171,7 @@ class PhotoSessionModel(object):
         return not self.capture_start and time.time() - self.session_start > self.conf.idle_secs
 
     def get_finished_session_model(self):
-        medium_image_names = [self.booth_model.get_image_medium_name(self.id, photo_no) for photo_no in xrange(1, 5)]
+        medium_image_names = [self.booth_model.get_image_name(self.id, photo_no, 'medium') for photo_no in xrange(1, 5)]
         lv_images = [sizes[2] for sizes in self.images.itervalues()]
         return FinishedSessionModel(self.booth_model, self.id, lv_images, medium_image_names)
 
@@ -194,7 +192,7 @@ class FinishedSessionModel(object):
         """ trying to create FinishedSession from directory """
         img_list = []
         for num in xrange(1, 5):
-            img_name = booth_model.get_image_prev_name(sess_id, num)
+            img_name = booth_model.get_image_name(sess_id, num, 'prev')
             try:
                 img = booth_model.controller.load_captured_image(img_name)
                 img_list.append(img)
@@ -263,17 +261,17 @@ class PhotoBoothModel(object):
         """ get session dir name """
         return os.path.join(self.conf.save_path, str(sess_id))
 
-    def get_image_name(self, sess_id, count):
-        """ get full image file name """
-        return os.path.join(self.conf.save_path, str(sess_id), str(count) + '.jpg')
+    def get_image_name(self, sess_id, count, img_type):
+        """ get image file name for a given type"""
+        if img_type == 'full':
+            img_filename = str(count) + '.jpg'
+        else:
+            img_filename = str(count) + '_' + img_type + '.jpg'
+        return os.path.join(self.conf.save_path, str(sess_id), img_filename)
 
-    def get_image_medium_name(self, sess_id, count):
-        """ get medium image file name """
-        return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_medium.jpg')
-
-    def get_image_prev_name(self, sess_id, count):
-        """ get preview file name """
-        return os.path.join(self.conf.save_path, str(sess_id), str(count) + '_prev.jpg')
+    def get_image_names_all(self, sess_id, count):
+        """ get image file names for all sizes """
+        return [self.get_image_name(sess_id, count, img_type) for img_type in ['full', 'medium', 'prev']]
 
     def start_new_session(self):
         """ work to be done when new session starts """
