@@ -4,6 +4,7 @@ import photobooth.model as model
 import photobooth.view as view
 import photobooth.upload as upload
 import photobooth.platform as platform
+from photobooth.printer import PrinterProxy
 from threading import Thread
 from Queue import Queue
 import multiprocessing
@@ -20,10 +21,10 @@ class PhotoBoothController(object):
 
     BUTTONPUSHEVENT = pygame.USEREVENT + 2
 
-    def __init__(self, config, camera, printer):
+    def __init__(self, config, camera):
         self.conf = config
         self.camera = camera
-        self.printer = printer
+        self.printer = PrinterProxy(self.conf)
 
         # platform and pygame
         logger.info("PLATFORM: %s" % platform.running_platform)
@@ -49,12 +50,13 @@ class PhotoBoothController(object):
         self.thread_capture = Thread(target=self.capture_image_worker)
         self.thread_capture.setDaemon(True)
 
-        # upload background process
+        # upload background process (creating GIF is cpu-intensive, make it happen in other process to avid GIL)
         if self.conf.upload:
             pipe = multiprocessing.Pipe()
             self.upload_pipe = pipe[0]
             self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, pipe))
             self.process_upload.daemon = True
+
 
         self.next_fps_update_ticks = 0
 
@@ -90,7 +92,9 @@ class PhotoBoothController(object):
     def quit(self):
         if self.model:
             self.model.quit()
-        self.upload_pipe.close()
+        if self.conf.upload and self.upload_pipe:
+            self.upload_pipe.close()
+
         pygame.quit()
 
     def button_callback(self):

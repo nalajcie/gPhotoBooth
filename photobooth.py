@@ -63,6 +63,7 @@ def main():
     logger.info("Full configuration: %s", conf)
 
     # setup CAMERA
+    # this is done here to be able to close the camera in case of any excepion
     try:
         if conf.dummy_camera:
             cam = camera.DummyCamera()
@@ -72,14 +73,8 @@ def main():
         logger.exception("Camera could not be initialised, exiting!")
         sys.exit(-1)
 
-    # setup PRINTER
-    if conf.thermal_printer:
-        printer_inst = printer.ThermalPrinter()
-    else:
-        printer_inst = printer.NullPrinter()
-
     try:
-        booth = controller.PhotoBoothController(conf, cam, printer_inst)
+        booth = controller.PhotoBoothController(conf, cam)
         booth.run()
     except Exception:
         logger.exception("Unhandled exception!")
