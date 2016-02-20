@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-from local_modules import piggyphoto
 import pygame
 from StringIO import StringIO
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from local_modules import piggyphoto
 
 MAX_FPS=30
 

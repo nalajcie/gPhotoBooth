@@ -51,9 +51,9 @@ TODO: create neat yaml configuration file
 * this is work-in-progress, bear in mind that the code may change quicker then the README :)
 
 ### Examples
-1. gPhoto2 Live view demo (for testing if Your camera works with gPhoto2)
+1. gPhoto2 Live view demo (for testing if Your camera works with gPhoto2) - and other scripts in @dev@ directory
   ```bash
-  ./preview.py
+  ./dev/preview-threaded.py
   ```
 
 2. Photobooth application
