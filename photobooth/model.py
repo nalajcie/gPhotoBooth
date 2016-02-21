@@ -1,3 +1,4 @@
+# encoding: utf-8
 import os
 import time
 import datetime
@@ -54,6 +55,7 @@ class CountdownState(TimedState):
 
     def update(self, button_pressed):
         if self.time_up():
+            self.model.controller.live_view_hide_arrow()
             return TakePictureState(self.model)
         else:
             self.display_countdown()
@@ -63,22 +65,13 @@ class CountdownState(TimedState):
         """ as the name says... """
         time_remaining = self.timer - time.time()
 
-        if time_remaining <= 0:
-            # TODO
-            #self.session.booth.display_camera_arrow(clear_screen=True)
-            pass
-        else:
-            text = "Taking picture %d / 4 in: %d" % ((self.model.photo_count + 1), int(time_remaining + 1))
-            if time_remaining < 2:
-                if int(time_remaining * 2) % 2 == 1:
-                    #lines = ["Look at the camera!", ""] + lines
-                    # TODO: show arrow + "LOOK"
-                    #self.session.booth.display_camera_arrow()
-                    pass
-                else:
-                    # TODO: do not show arrow + "LOOK"
-                    pass
-            self.model.controller.set_text(text)
+        text = u"%d" % int(time_remaining + 1)
+        if time_remaining < 2:
+            if int(time_remaining * 2) % 2 == 0:
+                self.model.controller.live_view_show_arrow()
+            else:
+                self.model.controller.live_view_hide_arrow()
+        self.model.controller.set_text(text, True)
 
 
 class TakePictureState(TimedState):
@@ -87,7 +80,7 @@ class TakePictureState(TimedState):
         super(TakePictureState, self).__init__(model, model.conf.image_display_secs)
         image_name = self.take_picture()
         logger.debug("TakePictureState: taking picutre: %s", image_name)
-        self.model.controller.set_text("Nice!")
+        self.model.controller.set_text(u"Nice!")
 
     def update(self, button_pressed):
         if self.model.photo_count in self.model.images:

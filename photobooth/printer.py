@@ -55,6 +55,8 @@ class AbstractPrinter(object):
                 req_id, req_data = client_pipe.recv()
             except EOFError:
                 break
+            except IOError:
+                break
 
             try:
                 start = time.time()

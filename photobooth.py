@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# enc: utf-8
+# encoding: utf-8
 """ Photobooth main file """
 
 import sys

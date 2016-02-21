@@ -130,8 +130,14 @@ class PhotoBoothController(object):
         self.camera.stop_preview()
         self.view.lv.stop()
 
-    def set_text(self, text_lines):
-        self.view.textbox.draw_text(text_lines)
+    def live_view_show_arrow(self):
+        self.view.lv.show_arrow = True
+
+    def live_view_hide_arrow(self):
+        self.view.lv.show_arrow = False
+
+    def set_text(self, text_lines, big_font=False):
+        self.view.textbox.draw_text(text_lines, big_font)
 
     def capture_image_worker(self):
         while self.is_running:

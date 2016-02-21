@@ -31,6 +31,8 @@ def run(config, pipe):
             sess_id, file_list = client_pipe.recv()
         except EOFError:
             break
+        except IOError:
+            break
 
         try:
             logger.info("processing sess(%d) files: %s", sess_id, file_list)
