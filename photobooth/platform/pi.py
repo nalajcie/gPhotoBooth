@@ -16,7 +16,7 @@ def platform_init():
     subprocess.call(["gpio", "-g", "mode", "17", "alt3"])
 
 def platform_deinit():
-    GPIO.cleanup()
+    pass
 
 class Button(base.Peripherial):
     LED_PIN = 18    # GPIO

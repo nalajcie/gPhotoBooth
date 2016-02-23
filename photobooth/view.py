@@ -39,14 +39,15 @@ class PhotoPreview(pygame.sprite.DirtySprite):
         self.image_orig = None
 
     @classmethod
-    def width(self):
-        return self.WIDTH + 2 * self.BORDER
+    def width(cls):
+        return cls.WIDTH + 2 * cls.BORDER
 
     @classmethod
-    def height(self):
-        return self.HEIGHT + 2 * self.BORDER
+    def height(cls):
+        return cls.HEIGHT + 2 * cls.BORDER
 
-    def load_overlay_animation_frames(self, file_glob, begin, end, l):
+    @staticmethod
+    def load_overlay_animation_frames(file_glob, begin, end, l):
         for i in xrange(begin, end):
             img = pygame.image.load(file_glob % i).convert_alpha()
             l.append(img)
@@ -76,7 +77,7 @@ class PhotoPreview(pygame.sprite.DirtySprite):
 
     def draw_number(self, number):
         """ draws a number in the middle of the surface """
-        font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
+        font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.big_font_size)
         fw, fh = font.size(str(number))
         surface = font.render(str(number), True, self.conf.font_color)
         self.image.blit(surface, ((self.rect.width - fw) // 2, (self.rect.height - fh) // 2))
@@ -114,7 +115,7 @@ class PhotoPreview(pygame.sprite.DirtySprite):
             canvas.blit(self.image, self.rect)
             return self.rect
 
-    def update(self, force_redraw = 0):
+    def update(self, force_redraw=0):
         if force_redraw:
             self.dirty = 1
         if self.image_orig and self.is_overlay:
@@ -158,7 +159,7 @@ class SmallPhotoPreview(PhotoPreview):
         self.draw_rect()
         self.draw_number(self.number)
 
-    def update(self, force_redraw):
+    def update(self, force_redraw=0):
         super(SmallPhotoPreview, self).update(force_redraw)
 
 
@@ -178,7 +179,36 @@ class LivePreview(PhotoPreview):
 
         self.load_begin_overlay_animation_frames("assets/shutter/big/shutter%02d.png", 0, 8)
         self.load_end_overlay_animation_frames("assets/shutter/big/shutter%02d.png", 8, 16)
+        self._show_arrow = False
+        self.arrow_img = self.get_arrow_overlay()
+        self.arrow_rect = self.arrow_img.get_rect()
+        self.arrow_rect.center = (self.width() / 2, self.height() / 2)
+
         self.stop()
+
+    def get_arrow_overlay(self):
+        """ prepares the transparent image with arrow pointing the camera  """
+        w, h = (600, 400)
+        arrow = pygame.Surface((w, h), flags=pygame.SRCALPHA)
+        pygame.draw.polygon(arrow, (255, 255, 255),
+                ((200, 300), (200, 200), (0, 200), (300, 0),
+                    (600, 200), (400, 200), (400, 300)))
+        font = pygame.font.SysFont(pygame.font.get_default_font(), 100)
+        line = font.render("Patrz w obiektyw!", True, (255, 255, 255))
+        line_pos = line.get_rect()
+        line_pos.center = (w / 2, 350)
+
+        arrow.blit(line, line_pos)
+        return arrow
+
+    @property
+    def show_arrow(self):
+        return self._show_arrow
+
+    @show_arrow.setter
+    def show_arrow(self, val):
+        self._show_arrow = val
+        self.is_dirty = 1
 
     def draw_flip_image(self, image, flip_image):
         """ starts displaying image instead of empty rect """
@@ -204,9 +234,11 @@ class LivePreview(PhotoPreview):
         self.enqueued_anim = (img_list, fps)
         self.set_image(img_list[-1])
 
-    def update(self, force_redraw):
+    def update(self, force_redraw=0):
         if self.is_started:
             self.draw_flip_image(self.camera.capture_preview(), self.conf.flip_preview)
+            if self.show_arrow:
+                self.image.blit(self.arrow_img, self.arrow_rect)
         elif self.enqueued_anim and not self.is_overlay:
             img_list, fps = self.enqueued_anim
             self.enqueued_anim = None
@@ -225,7 +257,8 @@ class TextBox(PhotoPreview):
 
     def __init__(self, group, conf, size, center):
         super(TextBox, self).__init__(group, conf, (size[0], self.HEIGHT), center, self.BORDER)
-        self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size/2)
+        self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
+        self.big_font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.big_font_size)
 
         # surface & positioning
         #self.image = pygame.Surface(size)
@@ -235,19 +268,22 @@ class TextBox(PhotoPreview):
         self.image.convert()
         self.current_text = ""
 
-    def update(self, force_redraw):
+    def update(self, force_redraw=0):
         if force_redraw:
             self.dirty = 1
 
-    def draw_text(self, text):
+    def draw_text(self, text, big_font=False):
         if self.current_text == text:
             return
 
+        if big_font:
+            font = self.big_font
+        else:
+            font = self.font
+
         self.current_text = text
-        self.image.fill((0,0,0))
-        location = self.image.get_rect()
-        line = self.font.render(text, True, self.conf.font_color)
-        line_height = self.font.get_linesize()
+        self.image.fill((0, 0, 0))
+        line = font.render(text, True, self.conf.font_color)
         line_pos = line.get_rect()
         line_pos.center = (self.rect.width / 2, self.rect.height / 2)
 
@@ -277,7 +313,6 @@ class PygView(object):
 
         flags = pygame.DOUBLEBUF | [0, pygame.FULLSCREEN][self.conf.fullscreen]
         self.canvas = pygame.display.set_mode((self.conf.screen_width, self.conf.screen_height), flags)
-        self.font = pygame.font.SysFont(pygame.font.get_default_font(), self.conf.font_size)
         if self.conf.back_image:
             image = pygame.image.load(self.conf.back_image)
             self.back_image = pygame.transform.scale(image, (self.conf.screen_width, self.conf.screen_height))
@@ -301,13 +336,13 @@ class PygView(object):
 
     def init_child_components(self):
         """ Create child graphics components """
-        width = self.conf.screen_width
-        height = self.conf.screen_height
+        screen_width = self.conf.screen_width
+        screen_height = self.conf.screen_height
 
         main_total_width = LivePreview.width() + self.conf.idle_space + SmallPhotoPreview.width()
         main_total_height = LivePreview.height() + self.conf.idle_space + TextBox.height()
-        left_margin = (self.conf.screen_width - main_total_width) / 2
-        top_margin = (self.conf.screen_height - main_total_height) / 2
+        left_margin = (screen_width - main_total_width) / 2
+        top_margin = (screen_height - main_total_height) / 2
 
         self.lv = LivePreview(self.mainview_group, self.conf, (left_margin, top_margin), self.camera)
 
@@ -324,7 +359,7 @@ class PygView(object):
 
         #TEXT BOX
         top_offset = top_margin + LivePreview.height() + self.conf.idle_space + TextBox.height() / 2
-        self.textbox = TextBox(self.mainview_group, self.conf, (main_total_width, TextBox.height()), (width / 2, top_offset))
+        self.textbox = TextBox(self.mainview_group, self.conf, (main_total_width, TextBox.height()), (screen_width / 2, top_offset))
 
         #idle previews
         self.idle_previews = dict()
@@ -332,10 +367,10 @@ class PygView(object):
 
         idle_total_width = SmallPhotoPreview.width() * 4 + self.conf.idle_space * 3
         idle_total_height = SmallPhotoPreview.height() * 4 + self.conf.idle_space * 4 + TextBox.height()
-        left_margin = (self.conf.screen_width - idle_total_width) / 2
+        left_margin = (screen_width - idle_total_width) / 2
 
         left_offset = left_margin
-        top_offset = (self.conf.screen_height - idle_total_height) / 2
+        top_offset = (screen_height - idle_total_height) / 2
         for num in xrange(1, 17):
             self.idle_previews[num] = SmallPhotoPreview(self.idleview_group, self.conf, (left_offset, top_offset), num)
             left_offset += SmallPhotoPreview.width() + self.conf.idle_space
@@ -343,7 +378,7 @@ class PygView(object):
                 left_offset = left_margin
                 top_offset += SmallPhotoPreview.height() + self.conf.idle_space
 
-        self.idle_textbox = TextBox(self.idleview_group, self.conf, (idle_total_width, TextBox.height()), (width / 2, top_offset + TextBox.height() / 2))
+        self.idle_textbox = TextBox(self.idleview_group, self.conf, (idle_total_width, TextBox.height()), (screen_width / 2, top_offset + TextBox.height() / 2))
         self.idle_textbox.draw_text("Push a button!")
 
 

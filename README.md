@@ -1,4 +1,6 @@
 # gPhotoBooth
+[![Code Climate](https://codeclimate.com/github/nalajcie/gPhotoBooth/badges/gpa.svg)](https://codeclimate.com/github/nalajcie/gPhotoBooth)
+[![Codacy Badge](https://api.codacy.com/project/badge/grade/9daa6d6c79d74de3b6708c928bc3c723)](https://www.codacy.com/app/nalajcie/gPhotoBooth)
 ## About
 Photobooth using any camera supported with libgphoto2. Using any other camera should be as easy as providing custom impelmentation of `Camera` class.
 
@@ -49,9 +51,9 @@ TODO: create neat yaml configuration file
 * this is work-in-progress, bear in mind that the code may change quicker then the README :)
 
 ### Examples
-1. gPhoto2 Live view demo (for testing if Your camera works with gPhoto2)
+1. gPhoto2 Live view demo (for testing if Your camera works with gPhoto2) - and other scripts in @dev@ directory
   ```bash
-  ./preview.py
+  ./dev/preview-threaded.py
   ```
 
 2. Photobooth application

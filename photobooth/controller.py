@@ -4,6 +4,7 @@ import photobooth.model as model
 import photobooth.view as view
 import photobooth.upload as upload
 import photobooth.platform as platform
+from photobooth.printer import PrinterProxy
 from threading import Thread
 from Queue import Queue
 import multiprocessing
@@ -20,10 +21,10 @@ class PhotoBoothController(object):
 
     BUTTONPUSHEVENT = pygame.USEREVENT + 2
 
-    def __init__(self, config, camera, printer):
+    def __init__(self, config, camera):
         self.conf = config
         self.camera = camera
-        self.printer = printer
+        self.printer = PrinterProxy(self.conf)
 
         # platform and pygame
         logger.info("PLATFORM: %s" % platform.running_platform)
@@ -49,12 +50,13 @@ class PhotoBoothController(object):
         self.thread_capture = Thread(target=self.capture_image_worker)
         self.thread_capture.setDaemon(True)
 
-        # upload background process
+        # upload background process (creating GIF is cpu-intensive, make it happen in other process to avid GIL)
         if self.conf.upload:
-            self.upload_send_pipe, child_recv_pipe = multiprocessing.Pipe()
-            child_send_pipe, self.upload_recv_pipe = multiprocessing.Pipe()
-            self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, child_send_pipe, child_recv_pipe))
+            pipe = multiprocessing.Pipe()
+            self.upload_pipe = pipe[0]
+            self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, pipe))
             self.process_upload.daemon = True
+
 
         self.next_fps_update_ticks = 0
 
@@ -90,6 +92,9 @@ class PhotoBoothController(object):
     def quit(self):
         if self.model:
             self.model.quit()
+        if self.conf.upload and self.upload_pipe:
+            self.upload_pipe.close()
+
         pygame.quit()
 
     def button_callback(self):
@@ -125,8 +130,14 @@ class PhotoBoothController(object):
         self.camera.stop_preview()
         self.view.lv.stop()
 
-    def set_text(self, text_lines):
-        self.view.textbox.draw_text(text_lines)
+    def live_view_show_arrow(self):
+        self.view.lv.show_arrow = True
+
+    def live_view_hide_arrow(self):
+        self.view.lv.show_arrow = False
+
+    def set_text(self, text_lines, big_font=False):
+        self.view.textbox.draw_text(text_lines, big_font)
 
     def capture_image_worker(self):
         while self.is_running:
@@ -160,20 +171,22 @@ class PhotoBoothController(object):
             self.capture_names.task_done()
             self.model.set_current_session_imgs(image_number, (img, img_lv, img_prev))
 
-    def capture_image(self, image_number, full_file_path, medium_file_path, prev_file_path):
+    def capture_image(self, image_number, file_paths):
         # view: capture begin animation
         self.view.lv.pause()
         self.view.lv.begin_overlay()
         self.view.main_previews[image_number].begin_overlay()
 
         # schedule worker thread to capture image
-        self.capture_names.put((image_number, full_file_path, medium_file_path, prev_file_path))
+        obj = (image_number, file_paths[0], file_paths[1], file_paths[2])
+        self.capture_names.put(obj)
 
     def print_camera_preview(self):
         img = self.view.lv.image
         self.printer.print_image(img)
 
-    def load_captured_image(self, file_path):
+    @staticmethod
+    def load_captured_image(file_path):
         img = pygame.image.load(file_path).convert()
         return img
 
@@ -191,4 +204,4 @@ class PhotoBoothController(object):
         """ Start work related with finished session processing - uploading and printing"""
         #TODO: start printing
         if self.conf.upload:
-            self.upload_send_pipe.send((sess.id, sess.medium_img_paths))
+            self.upload_pipe.send((sess.id, sess.medium_img_paths))

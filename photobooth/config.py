@@ -1,16 +1,22 @@
 
-
+"""
 ### CONFGIURATION ###
-# this is the default configuration, some values can be changed using commandline parameters
-# TODO: read out custom configuration from YAML config file
+this is the default configuration, some values can be changed using
+commandline parameters
+ TODO: read out custom configuration from YAML config file
+"""
 
 default_config = {
     # display-related consts
     'screen_width': 1280,
     'screen_height': 800,
-    'fullscreen': 0,
+    'fullscreen': False,
     'idle_fps': 2,
     'working_fps': 30,
+
+    # peripherials-related values
+    'thermal_printer': False,
+    'dummy_camera': False,
 
     # controller-related vars
     'save_path': '.',
@@ -18,17 +24,17 @@ default_config = {
     'initial_countdown_secs': 3,
     'midphoto_countdown_secs': 3,
     'image_display_secs': 0,
-    'montage_display_secs': 5,
+    'montage_display_secs': 9,
     'idle_secs': 30,
     'montage_fps': 4,
     'idle_previews_cnt': 16,
-    'thermal_printer': False,
 
     # whole screen drawing-related consts
     'font_color': (210, 210, 210),
     'border_color': (0, 0, 0),
     #'border_color': (255, 0, 0),
-    'font_size': 142,
+    'font_size': 72,
+    'big_font_size': 144,
     'back_color': (230, 180, 40),
     'back_image': 'assets/pixelbackground_02_by_kara1984.jpg',
 
@@ -39,8 +45,8 @@ default_config = {
     'bottom_margin': 20,
     'top_margin': 20,
 
-    # tumblr
-    'upload': False, # disable uploading by default
+    # tumblr uploading
+    'upload': False,
     'tumblr_blogname': 'donothavetimeforthis',
     # note: credentials are kept in ~/.tumblr
 

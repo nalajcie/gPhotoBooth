@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-from local_modules import piggyphoto
 import pygame
 from StringIO import StringIO
 from Queue import Queue
 import threading
+
+import sys
 import os
-import time
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from local_modules import piggyphoto
 
 ### FOR PROFILING
 PROFILING=0
