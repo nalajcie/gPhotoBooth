@@ -186,7 +186,8 @@ class LivePreview(PhotoPreview):
 
         self.stop()
 
-    def get_arrow_overlay(self):
+    @staticmethod
+    def get_arrow_overlay():
         """ prepares the transparent image with arrow pointing the camera  """
         w, h = (600, 400)
         arrow = pygame.Surface((w, h), flags=pygame.SRCALPHA)
