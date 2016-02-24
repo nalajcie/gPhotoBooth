@@ -48,12 +48,12 @@ Specific commands are for ubuntu/debian based systems.
   ```
 
 6. libjpegturbo hack on Raspberry Pi
-  pygame uses libSDL, which is linked against @libjpeg.so.8@. On RPi there is only @libjpegturbo.so.6.2@ prebuilt. 
-  If You rebuild it locally and use @LD_LIBRARY_PATH@, you will experience vast improvement in JPEG reading.
+  pygame uses libSDL, which is linked against `libjpeg.so.8`. On RPi there is only `libjpegturbo.so.6.2` prebuilt. 
+  If You rebuild it locally and use `LD_LIBRARY_PATH`, you will experience vast improvement in JPEG reading.
 
   Because live view is in fact a series of JPEGs, this will result in huge FPS difference (10-12 FPS instead of 2-4).
 
-  TODO: include detailed steps to rebuild libjpegturbo on Pi
+  TODO: include detailed steps to rebuild libjpegturbo on Pi.
 
 ## Configuration
 For now configuration is hardcoded in photobooth/config.py and/or provided as commandline params (see usage).
@@ -94,5 +94,9 @@ setup necessary ENV variables (or use properly env\_keep/env\_reset in /etc/sudo
 
 ## Hardware setup
 For now just the schematics of the photobooth, I will add more info when it will be finished.
+
+Note: the software runs fine on any linux computer without additonal hardware.
+Moreover, You can attach Thermal Printer using USB\<-\>UART interface.
+
 ![Connection schematics](/doc/wiring_bb.png?raw=true "Connection schematics")
 
