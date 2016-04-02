@@ -41,14 +41,14 @@ try:
     while True:
         for i in xrange(LED_DUTY_MIN, LED_DUTY_MAX + 1, LED_DUTY_STEP):
             wiringpi2.pwmWrite(LED_PIN, i)
-            wiringpi2.pwmWrite(LIGHTS_PIN, LED_DUTY_MAX + LED_DUTY_MIN - i)
+            wiringpi2.pwmWrite(LIGHTS_PIN,i)
             time.sleep(0.02)
 
-        time.sleep(0.5)
+        time.sleep(1.5)
 
         for i in xrange(LED_DUTY_MAX, LED_DUTY_MIN - 1, -LED_DUTY_STEP):
             wiringpi2.pwmWrite(LED_PIN, i)
-            wiringpi2.pwmWrite(LIGHTS_PIN, LED_DUTY_MAX + LED_DUTY_MIN - i)
+            wiringpi2.pwmWrite(LIGHTS_PIN,i)
             time.sleep(0.02)
 
         #time.sleep(0.5)
