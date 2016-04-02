@@ -33,9 +33,10 @@ class PrinterProxy(object):
         obj = (img_pygame.get_size(), pygame.image.tostring(img_pygame, "RGB"))
         self.printer_pipe.send((PrinterProxy.REQ_SINGLE_IMG, obj))
 
-    def print_session(self, sess):
+    def print_session(self, sess_id, sess_imgs):
         """ pretty-print the whole photosession """
-        self.printer_pipe.send((PrinterProxy.REQ_FULL_SESS, sess))
+        img_objs = [(img.get_size(), pygame.image.tostring(img, "RGB")) for img in sess_imgs]
+        self.printer_pipe.send((PrinterProxy.REQ_FULL_SESS, (sess_id, img_objs)))
 
     def __del__(self):
         self.printer_pipe.close()
@@ -64,7 +65,8 @@ class AbstractPrinter(object):
                 if req_id == PrinterProxy.REQ_SINGLE_IMG:
                     self.print_image(req_data)
                 elif req_id == PrinterProxy.REQ_FULL_SESS:
-                    self.print_session(req_data)
+                    sess_id, sess_imgs = req_data
+                    self.print_session(sess_id, sess_imgs)
                 else:
                     logger.error("unknown printer request: %d", req_id)
                 logger.info("printer request finished: %d, time: %f seconds", req_id, (time.time() - start))
@@ -75,7 +77,7 @@ class AbstractPrinter(object):
         """ debug: printing single image """
         raise NotImplementedError
 
-    def print_session(self, sess):
+    def print_session(self, sess_id, sess_imgs):
         """ pretty-print the whole photosession """
         raise NotImplementedError
 
@@ -92,6 +94,7 @@ class ThermalPrinter(AbstractPrinter):
 
         #TODO: get uart connection from platform and config from our one file
         self.printer = Adafruit_Thermal.Adafruit_Thermal(timeout=5, config="printer.cfg")
+        self.logo = Image.open(self.conf.print_logo)
 
     def print_image(self, img_obj):
         logger.info("ThermalPrinter: printing image")
@@ -113,10 +116,28 @@ class ThermalPrinter(AbstractPrinter):
         self.printer.printImage(img, False)
         self.printer.feed(3)
 
-    def print_session(self, sess):
+    def print_session(self, sess_id, sess_imgs):
         """ pretty-print the whole photosession """
-        #TODO: decide how to print the whole session
-        pass
+        # (1) print logo as RAW IMAGE
+        self.printer.printImage(self.logo, False)
+        self.printer.feed(2)
+
+        # (2) add header text
+        self.printer.justify('C')
+        self.printer.println("http://hajtamysie.today/")
+        self.printer.justify('L')
+        self.printer.feed(2)
+
+        # (3) scale and print all the images
+        #for img in sess_imgs:
+        #    self.print_image(img)
+        # we're printing only the last image, because the printer heats too much and darkens the images
+        self.print_image(sess_imgs[3])
+
+        # (4) add some final text
+        self.printer.println(time.strftime("%Y-%m-%d %H:%M:%S"))
+        self.printer.println("Sesja nr: %d" % sess_id)
+        self.printer.feed(3)
 
 class NullPrinter(AbstractPrinter):
     """ dummy no-op printer """
@@ -150,8 +171,8 @@ class NullPrinter(AbstractPrinter):
         self.print_cnt += 1
         time.sleep(3) # simulate printing time
 
-    def print_session(self, sess):
+    def print_session(self, sess_id, sess_imgs):
         """ pretty-print the whole photosession """
-        # no-op
+        #no-op
         pass
 

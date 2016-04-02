@@ -6,7 +6,7 @@ import sys
 import argparse
 import logging
 
-from photobooth import controller, camera, config, printer
+from photobooth import controller, camera, config
 
 
 

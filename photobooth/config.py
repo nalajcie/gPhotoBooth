@@ -17,6 +17,9 @@ default_config = {
     # peripherials-related values
     'thermal_printer': False,
     'dummy_camera': False,
+    'lights_default': 512,
+    'lights_full': 1024,
+    'print_logo': 'assets/nalajcie-logo.png',
 
     # controller-related vars
     'save_path': '.',

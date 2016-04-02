@@ -3,6 +3,13 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/9daa6d6c79d74de3b6708c928bc3c723)](https://www.codacy.com/app/nalajcie/gPhotoBooth)
 ## About
 Photobooth using any camera supported with libgphoto2. Using any other camera should be as easy as providing custom impelmentation of `Camera` class.
+Features:
+* robust live preview (about 18-20 FPS on laptop, 10-12 FPS (with libturbo hack) on Pi)
+* fancy UI with shutter animation
+* automatic GIF creation
+* uploading GIFs to tumblr
+* peripherials: controlling via external led pushbutton, controlling lights
+* printing using Thermal Printer
 
 ## Prereqisities
 Specific commands are for ubuntu/debian based systems.
@@ -40,6 +47,14 @@ Specific commands are for ubuntu/debian based systems.
   ./build    # will also install python lib system-wide using sudo
   ```
 
+6. libjpegturbo hack on Raspberry Pi
+  pygame uses libSDL, which is linked against `libjpeg.so.8`. On RPi there is only `libjpegturbo.so.6.2` prebuilt. 
+  If You rebuild it locally and use `LD_LIBRARY_PATH`, you will experience vast improvement in JPEG reading.
+
+  Because live view is in fact a series of JPEGs, this will result in huge FPS difference (10-12 FPS instead of 2-4).
+
+  TODO: include detailed steps to rebuild libjpegturbo on Pi.
+
 ## Configuration
 For now configuration is hardcoded in photobooth/config.py and/or provided as commandline params (see usage).
 TODO: create neat yaml configuration file
@@ -76,3 +91,12 @@ setup necessary ENV variables (or use properly env\_keep/env\_reset in /etc/sudo
   ```bash
   export WIRINGPI_GPIOMEM=1
   ```
+
+## Hardware setup
+For now just the schematics of the photobooth, I will add more info when it will be finished.
+
+Note: the software runs fine on any linux computer without additonal hardware.
+Moreover, You can attach Thermal Printer using USB\<-\>UART interface.
+
+![Connection schematics](/doc/wiring_bb.png?raw=true "Connection schematics")
+
