@@ -69,7 +69,6 @@ class PhotoBoothController(object):
         self.is_running = True
         self.thread_capture.start()
         self.button.start()
-        self.lights.start()
 
         if self.conf.upload:
             self.process_upload.start()
@@ -150,28 +149,34 @@ class PhotoBoothController(object):
             self.camera.capture_image(image_name)
             self.camera.start_preview() # resume previews ASAP
 
-            # (2) load captured images and scale them
+            # (2) lights - default brightness
+            self.lights.set_brightness(self.conf.lights_default)
+
+            # (3) load captured images and scale them
             logger.debug("capture_image_worker: reading and scalling images")
             img = pygame.image.load(image_name).convert()
             img_lv = pygame.transform.scale(img, (view.LivePreview.WIDTH, view.LivePreview.HEIGHT))
             img_prev = pygame.transform.scale(img_lv, (view.SmallPhotoPreview.WIDTH, view.SmallPhotoPreview.HEIGHT))
 
-            # (3) view: start the 'end animation overlay' and resume LV
+            # (4) view: start the 'end animation overlay' and resume LV
             self.view.lv.start()
             self.view.lv.end_overlay()
             self.view.main_previews[image_number].set_image(img_prev)
             self.view.main_previews[image_number].end_overlay()
 
-            # (4) save the scalled images
+            # (5) save the scalled images
             pygame.image.save(img_prev, prev_name)
             pygame.image.save(img_lv, medium_name)
 
-            # (5) finish the task and send the results
+            # (6) finish the task and send the results
             logger.debug("capture_image_worker: DONE")
             self.capture_names.task_done()
             self.model.set_current_session_imgs(image_number, (img, img_lv, img_prev))
 
     def capture_image(self, image_number, file_paths):
+        # lights - maximum brightness
+        self.lights.set_brightness(self.conf.lights_full)
+
         # view: capture begin animation
         self.view.lv.pause()
         self.view.lv.begin_overlay()

@@ -17,6 +17,8 @@ default_config = {
     # peripherials-related values
     'thermal_printer': False,
     'dummy_camera': False,
+    'lights_default': 512,
+    'lights_full': 1024,
 
     # controller-related vars
     'save_path': '.',

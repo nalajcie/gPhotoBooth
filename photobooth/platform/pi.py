@@ -19,6 +19,7 @@ def platform_deinit():
     pass
 
 class Button(base.Peripherial):
+    """ Controlling hadware button with LED """
     LED_PIN = 18    # GPIO
 
     LED_DUTY_MAX = 1024
@@ -78,7 +79,30 @@ class Button(base.Peripherial):
         self.button_callback = callback_f
 
 class Lights(base.Peripherial):
-    #TODO
-    pass
+    """ Controlling moddeling POWER LED lights """
+
+    LIGHTS_PIN = 13 # GPIO -> board pin 33
+
+    PWM_VAL_DEFAULT = 512
+    PWM_VAL_MAX = 1024
+
+    def __init__(self):
+        # hardware PWM led
+        wiringpi2.pinMode(self.LIGHTS_PIN, wiringpi2.GPIO.PWM_OUTPUT)
+
+    def __del__(self):
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, 0)
+
+    def start(self):
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_DEFAULT)
+
+    def set_brightness(self, b):
+        if b > self.PWM_VAL_MAX:
+            b = self.PWM_VAL_MAX
+
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, b)
+
+    def pause(self):
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, 0)
 
 

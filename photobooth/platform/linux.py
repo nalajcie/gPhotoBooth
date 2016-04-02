@@ -18,3 +18,6 @@ class Lights(base.Peripherial):
     Feel free to implement Your peripherials here.
     """
 
+    def set_brightness(self, b):
+        pass
+

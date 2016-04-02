@@ -146,6 +146,9 @@ class PhotoSessionModel(object):
         self.conf = self.controller.conf
         self.id = sess_id
 
+        # start lights
+        self.controller.lights.start()
+
         # global model variables used by different states
         self.state = WaitingState(self)
         self.capture_start = None
@@ -274,9 +277,15 @@ class PhotoBoothModel(object):
         self.next_photo_session += 1
         self.controller.view.idle = False
 
+        # start lights
+        self.controller.lights.start()
+
     def end_session(self):
         """ work to be done when session ends """
         logging.debug("PhotoSession END")
+        # stop the lights
+        self.controller.lights.pause()
+
         if self.current_sess.finished():
             self.finished_sessions.append(self.current_sess.get_finished_session_model())
             self.update_finished()
