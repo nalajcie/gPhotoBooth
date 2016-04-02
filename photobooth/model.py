@@ -168,8 +168,9 @@ class PhotoSessionModel(object):
 
     def get_finished_session_model(self):
         medium_image_names = [self.booth_model.get_image_name(self.id, photo_no, 'medium') for photo_no in xrange(1, 5)]
-        lv_images = [sizes[2] for sizes in self.images.itervalues()]
-        return FinishedSessionModel(self.booth_model, self.id, lv_images, medium_image_names)
+        prev_images = [sizes[2] for sizes in self.images.itervalues()]
+        medium_images = [sizes[1] for sizes in self.images.itervalues()]
+        return FinishedSessionModel(self.booth_model, self.id, prev_images, medium_images, medium_image_names)
 
     def finished(self):
         """ returns True if this session is finished """
@@ -177,10 +178,11 @@ class PhotoSessionModel(object):
 
 class FinishedSessionModel(object):
     """ finised session previews to be displayed in idle screen """
-    def __init__(self, booth_model, sess_id, img_list, medium_img_paths):
+    def __init__(self, booth_model, sess_id, img_list, medium_img_list, medium_img_paths):
         self.id = sess_id
         self.booth_model = booth_model
         self.img_list = img_list
+        self.medium_img_list = medium_img_list
         self.medium_img_paths = medium_img_paths
 
     @classmethod
@@ -195,7 +197,7 @@ class FinishedSessionModel(object):
             except Exception:
                 raise ValueError # error while opening/reading file, incomplete photo session
 
-        return cls(booth_model, sess_id, img_list, None) # do not care about medium image paths
+        return cls(booth_model, sess_id, img_list, None, None) # do not care about medium images
 
 
 class PhotoBoothModel(object):
