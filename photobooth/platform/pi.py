@@ -5,7 +5,7 @@ import subprocess
 from threading import Thread
 
 import logging
-logger = logging.getLogger('platform.%s' % __name__)
+logger = logging.getLogger('photobooth.platform.%s' % __name__)
 
 # Note: this is actually a Pi2, see the wiring diagram for the details
 
@@ -28,6 +28,7 @@ class Button(base.Peripherial):
 
     BUTTON_PIN = 23 # detecting button pushes (GPIO)
     DEBOUNCE_MS = 20
+    LONGPRESS_SEC = 7
 
     def __init__(self):
         # button
@@ -40,6 +41,7 @@ class Button(base.Peripherial):
         wiringpi2.pinMode(self.LED_PIN, wiringpi2.GPIO.PWM_OUTPUT)
         self.thread_pwm_worker = Thread(target=self.pwm_worker)
         self.thread_pwm_worker.setDaemon(True)
+        self.button_pressed = 0
 
     def __del__(self):
         wiringpi2.pwmWrite(self.LED_PIN, 0)
@@ -69,9 +71,17 @@ class Button(base.Peripherial):
         if not self.button_callback:
             return
 
+        if wiringpi2.digitalRead(self.BUTTON_PIN):
+            logger.info("Button released: %f s", (time.time() - self.button_pressed))
+            if self.button_pressed > 0 and time.time() - self.button_pressed > self.LONGPRESS_SEC:
+                # power off Pi gracefully on long press release
+                logger.info("LONG BUTTON PRESS - POWEROFF")
+                subprocess.call(["sudo", "poweroff"])
+
         time.sleep(self.DEBOUNCE_MS // 1000)
         if not wiringpi2.digitalRead(self.BUTTON_PIN):
             logger.info("button press detected!")
+            self.button_pressed = time.time()
             self.button_callback()
 
     def register_callback(self, callback_f):
