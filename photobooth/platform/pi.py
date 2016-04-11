@@ -18,6 +18,10 @@ def platform_init():
 def platform_deinit():
     pass
 
+def platform_poweroff():
+    """ power off Pi gracefully on long press release """
+    subprocess.call(["sudo", "poweroff"])
+
 class Button(base.Peripherial):
     """ Controlling hadware button with LED """
     LED_PIN = 18    # GPIO
@@ -67,16 +71,19 @@ class Button(base.Peripherial):
         """ Pause long-running task (for whatever reason) """
         pass
 
+    def update_state(self):
+        if self.button_pressed > 0:
+            if not wiringpi2.digitalRead(self.BUTTON_PIN):
+                # button is still pressed
+                if time.time() - self.button_pressed > self.LONGPRESS_SEC:
+                    logger.info("LONG BUTTON PRESS - POWEROFF")
+                    platform_poweroff()
+            else: # button is released
+                self.button_pressed = -1
+
     def button_raw_press(self):
         if not self.button_callback:
             return
-
-        if wiringpi2.digitalRead(self.BUTTON_PIN):
-            logger.info("Button released: %f s", (time.time() - self.button_pressed))
-            if self.button_pressed > 0 and time.time() - self.button_pressed > self.LONGPRESS_SEC:
-                # power off Pi gracefully on long press release
-                logger.info("LONG BUTTON PRESS - POWEROFF")
-                subprocess.call(["sudo", "poweroff"])
 
         time.sleep(self.DEBOUNCE_MS // 1000)
         if not wiringpi2.digitalRead(self.BUTTON_PIN):

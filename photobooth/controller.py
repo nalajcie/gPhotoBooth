@@ -76,6 +76,7 @@ class PhotoBoothController(object):
         while self.is_running:
             self.clock.tick(self.view.fps)
             button_pressed = self.process_events()
+            self.button.update_state()
 
             self.view.update()
             self.model.update(button_pressed)
