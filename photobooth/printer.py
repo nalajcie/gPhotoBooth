@@ -91,8 +91,11 @@ class ThermalPrinter(AbstractPrinter):
         """ Printer initialisation """
         super(ThermalPrinter, self).__init__(config)
 
-        #TODO: get uart connection from platform and config from our one file
-        self.printer = Adafruit_Thermal.Adafruit_Thermal(timeout=5, config="printer.cfg")
+        self.printer = Adafruit_Thermal.Adafruit_Thermal(
+                self.conf['printer']['thermal']['device_name'],
+                self.conf['printer']['thermal']['baudrate'],
+                **self.conf['printer']['thermal']['kwargs']
+        )
         self.logo = Image.open(self.conf['printer']['logo'])
 
     def print_image(self, img_obj):

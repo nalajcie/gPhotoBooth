@@ -22,6 +22,22 @@ printer:
     url: http://example.com/
     print_all_imgs: false
 
+    # thermal printer specifications
+    thermal:
+        device_name: /dev/ttyAMA0
+        baudrate: 115200
+
+        kwargs:
+            timeout: 5
+            rtscts: 1
+
+            #heat_time: 200
+            heat_time: 160
+            heat_dots: 7
+            heat_interval: 25
+
+            fw_version: 269
+
     # controller-related vars
 control:
     initial_countdown_secs:     3
