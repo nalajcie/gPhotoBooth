@@ -28,17 +28,26 @@ Specific commands are for ubuntu/debian based systems.
   sudo easy_install local_modules/pytumblr  # for uploading to tumblr
   ```
 
-3. (for using real camera) libgphoto2 + gPhoto2 for troubleshooting
+3. Dropbox SDK for full images storage
+  ```bash
+  wget https://www.dropbox.com/developers/downloads/sdks/core/python/dropbox-python-sdk-2.2.0.zip
+  unzip dropbox-python-sdk-2.2.0.zip
+  cd dropbox-python-sdk-2.2.0
+  sudo python setup.py install
+  ```
+  TODO: add info how to get authorization token for Dropbox
+
+4. (for using real camera) libgphoto2 + gPhoto2 for troubleshooting
   ```bash
   sudo apt-get install libgphoto2-6
   ```
 
-4. disabling system services grabbing gphoto2. For Pi comment out (using '#') the lines in this file:
+5. disabling system services grabbing gphoto2. For Pi comment out (using '#') the lines in this file:
   ``` bash
   sudo vim /usr/share/dbus-1/services/org.gtk.Private.GPhoto2VolumeMonitor.service
   ```
 
-5. install WiringPi and Python bindings (for now You have to use my fork which has wiringPiISR function fixed):
+6. install WiringPi and Python bindings (for now You have to use my fork which has wiringPiISR function fixed):
   ```bash
   sudo apt-get install wiringpi
   git clone https://github.com/nalajcie/WiringPi2-Python.git
@@ -47,7 +56,7 @@ Specific commands are for ubuntu/debian based systems.
   ./build    # will also install python lib system-wide using sudo
   ```
 
-6. libjpegturbo hack on Raspberry Pi
+7. libjpegturbo hack on Raspberry Pi
   pygame uses libSDL, which is linked against `libjpeg.so.8`. On RPi there is only `libjpegturbo.so.6.2` prebuilt. 
   If You rebuild it locally and use `LD_LIBRARY_PATH`, you will experience vast improvement in JPEG reading.
 

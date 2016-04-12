@@ -1,3 +1,4 @@
+# encoding: utf-8
 
 """
 ### CONFGIURATION ###
@@ -104,3 +105,18 @@ class Config(object):
 
         for (k, val) in tokens.iteritems():
             self.__dict__['tumblr_' + k] = val
+
+    def read_dropbox_config(self):
+        """ tries to read tumblr auth config from ~/.dropbox file """
+        import yaml
+        import os
+        yaml_path = os.path.expanduser('~') + '/.dropbox'
+        if not os.path.exists(yaml_path):
+            raise Exception("Please setup dropbox credentials in ~/.dropbox file")
+
+        yaml_file = open(yaml_path, "r")
+        tokens = yaml.safe_load(yaml_file)
+        yaml_file.close()
+
+        for (k, val) in tokens.iteritems():
+            self.__dict__['dropbox_' + k] = val

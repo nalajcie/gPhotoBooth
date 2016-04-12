@@ -1,3 +1,4 @@
+# encoding: utf-8
 import base
 import wiringpi2
 import time

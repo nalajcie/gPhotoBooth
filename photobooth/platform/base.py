@@ -21,3 +21,7 @@ class Peripherial(object):
     def register_callback(self, callback):
         """ Register callback for peripherial event """
         pass
+
+    def update_state(self):
+        """ Called upon every main loop "update" """
+        pass

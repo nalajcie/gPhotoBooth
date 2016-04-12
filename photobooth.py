@@ -52,6 +52,7 @@ def parse_args():
 
     if conf.upload:
         conf.read_tumblr_config()
+        conf.read_dropbox_config()
 
     return conf
 

@@ -1,3 +1,4 @@
+# encoding: utf-8
 from local_modules import piggyphoto
 from StringIO import StringIO
 from threading import Thread, Lock, Condition

@@ -167,10 +167,9 @@ class PhotoSessionModel(object):
         return not self.capture_start and time.time() - self.session_start > self.conf.idle_secs
 
     def get_finished_session_model(self):
-        medium_image_names = [self.booth_model.get_image_name(self.id, photo_no, 'medium') for photo_no in xrange(1, 5)]
         prev_images = [sizes[2] for sizes in self.images.itervalues()]
         medium_images = [sizes[1] for sizes in self.images.itervalues()]
-        return FinishedSessionModel(self.booth_model, self.id, prev_images, medium_images, medium_image_names)
+        return FinishedSessionModel(self.booth_model, self.id, prev_images, medium_images)
 
     def finished(self):
         """ returns True if this session is finished """
@@ -178,12 +177,17 @@ class PhotoSessionModel(object):
 
 class FinishedSessionModel(object):
     """ finised session previews to be displayed in idle screen """
-    def __init__(self, booth_model, sess_id, img_list, medium_img_list, medium_img_paths):
+    def __init__(self, booth_model, sess_id, img_list, medium_img_list):
         self.id = sess_id
         self.booth_model = booth_model
         self.img_list = img_list
         self.medium_img_list = medium_img_list
-        self.medium_img_paths = medium_img_paths
+
+    def get_medium_img_paths(self):
+        return [self.booth_model.get_image_name(self.id, photo_no, 'medium') for photo_no in xrange(1, 5)]
+
+    def get_full_img_paths(self):
+        return [self.booth_model.get_image_name(self.id, photo_no, 'full') for photo_no in xrange(1, 5)]
 
     @classmethod
     def from_dir(cls, booth_model, sess_id):
@@ -197,7 +201,7 @@ class FinishedSessionModel(object):
             except Exception:
                 raise ValueError # error while opening/reading file, incomplete photo session
 
-        return cls(booth_model, sess_id, img_list, None, None) # do not care about medium images
+        return cls(booth_model, sess_id, img_list, None) # do not care about medium images
 
 
 class PhotoBoothModel(object):

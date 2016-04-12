@@ -50,7 +50,7 @@ class PhotoBoothController(object):
         self.thread_capture = Thread(target=self.capture_image_worker)
         self.thread_capture.setDaemon(True)
 
-        # upload background process (creating GIF is cpu-intensive, make it happen in other process to avid GIL)
+        # upload background process (creating GIF is cpu-intensive, make it happen in other process to bypass GIL)
         if self.conf.upload:
             pipe = multiprocessing.Pipe()
             self.upload_pipe = pipe[0]
@@ -84,7 +84,7 @@ class PhotoBoothController(object):
             if self.next_fps_update_ticks < pygame.time.get_ticks():
                 fps_str = "[FPS]: %.2f" % (self.clock.get_fps())
                 pygame.display.set_caption(fps_str)
-                logger.debug(fps_str)
+                #logger.debug(fps_str)
                 self.next_fps_update_ticks = pygame.time.get_ticks() + self.conf.fps_update_ms
 
         self.quit()
@@ -210,4 +210,4 @@ class PhotoBoothController(object):
         """ Start work related with finished session processing - uploading and printing"""
         self.printer.print_session(sess.id, sess.medium_img_list)
         if self.conf.upload:
-            self.upload_pipe.send((sess.id, sess.medium_img_paths))
+            self.upload_pipe.send((sess.id, sess.get_medium_img_paths(), sess.get_full_img_paths()))
