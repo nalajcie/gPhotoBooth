@@ -115,28 +115,48 @@ class ThermalPrinter(AbstractPrinter):
         self.printer.printImage(img, False)
         self.printer.feed(3)
 
+    def println(self, arg):
+        """ encode and print  arg as iso8859-2 string, as this is the codepage enabled on the printer """
+        self.printer.println(arg.encode('iso8859-2'))
+
+
     def print_session(self, sess_id, sess_imgs):
         """ pretty-print the whole photosession """
+        # (0) wake the printer
+        self.printer.wake()
+
         # (1) print logo as RAW IMAGE
         self.printer.printImage(self.logo, False)
-        self.printer.feed(2)
+        self.printer.feed(1)
 
         # (2) add header text
         self.printer.justify('C')
-        self.printer.println("http://hajtamysie.today/")
+        self.printer.setSize('L')
+        self.println(self.conf['printer']['name'])
+        self.printer.setSize('s')
+        self.println(self.conf['printer']['url'])
         self.printer.justify('L')
         self.printer.feed(2)
 
+        # reset the printer, otherwise it spills out garbage
+        self.printer.sleep()
+        self.printer.wake()
+
         # (3) scale and print all the images
-        #for img in sess_imgs:
-        #    self.print_image(img)
-        # we're printing only the last image, because the printer heats too much and darkens the images
-        self.print_image(sess_imgs[3])
+        if self.conf['printer']['print_all_imgs']:
+            for img in sess_imgs:
+                self.print_image(img)
+        else:
+            # we're printing only the last image, because the printer heats too much and darkens the images
+            self.print_image(sess_imgs[3])
 
         # (4) add some final text
-        self.printer.println(time.strftime("%Y-%m-%d %H:%M:%S"))
-        self.printer.println("Sesja nr: %d" % sess_id)
+        self.println(time.strftime("%Y-%m-%d %H:%M:%S"))
+        self.println("Sesja nr: %d" % sess_id)
         self.printer.feed(3)
+
+        # (5) put printer back to sleep
+        self.printer.sleep()
 
 class NullPrinter(AbstractPrinter):
     """ dummy no-op printer """

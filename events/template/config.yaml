@@ -18,6 +18,9 @@ camera:
 printer:
     driver: NullPrinter
     logo: assets/nalajcie-logo.png
+    name: Event Name
+    url: http://example.com/
+    print_all_imgs: false
 
     # controller-related vars
 control:
