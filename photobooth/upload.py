@@ -96,6 +96,9 @@ def run(conf, pipe):
             post = client.create_photo(conf['upload']['tumblr']['blogname'], state="published", tags=["hajtamysie"], data=gif_name, caption=caption, format="html")
             logger.debug("create_photo: %s", post)
             logger.debug("create_photo time: %f seconds", (time.time() - start))
+            if not post or not 'id' in post:
+                logging.error("Thumblr post failure. Aborting this session.")
+                continue
 
             # (4) retrieve and send the short_url ASAP
             start = time.time()
