@@ -1,0 +1,68 @@
+# display-related consts
+display:
+    # best for RPi2 with 1280x800 HDMI display
+    screen_width:   1280
+    screen_height:  800
+    fullscreen:     False
+    idle_fps:       2
+    working_fps:    30
+
+    # peripherials-related values
+devices:
+    lights_default: 512
+    lights_full: 1024
+
+camera:
+    driver: DummyCamera
+
+printer:
+    driver: NullPrinter
+    logo: assets/nalajcie-logo.png
+
+    # controller-related vars
+control:
+    initial_countdown_secs:     3
+    midphoto_countdown_secs:    3
+    montage_display_secs:       9
+    idle_secs:                  30
+    montage_fps:                4
+    idle_previews_cnt:          16
+
+view:
+    # whole screen drawing-related consts
+    # the triplets are RGB colors
+    flip_preview:   True
+    font_color:     !!python/tuple [210, 210, 210]
+    border_color:   !!python/tuple [0, 0, 0]
+    back_color:     !!python/tuple [230, 180, 40]
+    font_size:      72
+    big_font_size:  144
+    back_image:     assets/pixelbackground_02_by_kara1984.jpg
+
+layout:
+    # change these only if changing display resolution from 1280x800
+    left_margin:   20
+    idle_space:    20
+    left_offset:   14 #42/3
+    top_offset:    14
+    bottom_margin: 20
+    top_margin:    20
+
+upload:
+    enabled: True
+    tumblr:
+        blogname: YOUR_NAME
+        consumer_key:       YOUR_KEY
+        consumer_secret:    YOUR_SECRET
+        oauth_token:        TOKEN
+        oauth_token_secret: TOKEN_SECRET
+    dropbox:
+        app_key:       dropbox_app_key
+        app_secret:    dropbox_app_secret
+        access_token:  dropbox_access_token
+
+
+# some debug vars
+debug:
+    fps_update_ms: 2000
+

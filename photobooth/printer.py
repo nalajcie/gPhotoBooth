@@ -3,6 +3,7 @@ from PIL import Image
 import multiprocessing
 import time
 import pygame
+import sys
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
@@ -16,10 +17,8 @@ class PrinterProxy(object):
         self.conf = config
 
         # setup PRINTER
-        if self.conf.thermal_printer:
-            self.printer_inst = ThermalPrinter(self.conf)
-        else:
-            self.printer_inst = NullPrinter(self.conf)
+        printer_driver_class = getattr(sys.modules[__name__], self.conf['printer']['driver'])
+        self.printer_inst = printer_driver_class(self.conf)
 
         # init and start printer process
         pipe = multiprocessing.Pipe()
@@ -94,7 +93,7 @@ class ThermalPrinter(AbstractPrinter):
 
         #TODO: get uart connection from platform and config from our one file
         self.printer = Adafruit_Thermal.Adafruit_Thermal(timeout=5, config="printer.cfg")
-        self.logo = Image.open(self.conf.print_logo)
+        self.logo = Image.open(self.conf['printer']['logo'])
 
     def print_image(self, img_obj):
         logger.info("ThermalPrinter: printing image")

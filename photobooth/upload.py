@@ -13,12 +13,12 @@ GIF_FILENAME = "animation.gif"
 def get_gif_filename(file_name):
     return os.path.join(os.path.dirname(file_name), GIF_FILENAME)
 
-def get_sess_dirname(config, sess_id):
-    return config.save_path + "/" + "sesja_" + str(sess_id)
+def get_sess_dirname(conf, sess_id):
+    return os.path.join(conf['event_dir'], "sesja_%d" % sess_id)
 
-def setup_dropbox_client(config):
+def setup_dropbox_client(conf):
     """ Setuping dropbox client and basic folder structure """
-    db_client = dropbox.client.DropboxClient(config.dropbox_access_token)
+    db_client = dropbox.client.DropboxClient(conf['upload']['dropbox']['access_token'])
     try:
         account_info = db_client.account_info()
     except dropbox.rest.ErrorResponse, ex:
@@ -32,7 +32,7 @@ def setup_dropbox_client(config):
 
     # check if upload folder exists and create if necessary
     try:
-        db_client.file_create_folder(config.save_path)
+        db_client.file_create_folder(conf['event_dir'])
     except dropbox.rest.ErrorResponse, ex:
         if ex.status == 403:
             logger.debug("Dropbox folder was already there")
@@ -42,7 +42,7 @@ def setup_dropbox_client(config):
 
     return db_client
 
-def run(config, pipe):
+def run(conf, pipe):
     """ we expect file list to be turned into GIF and uploaded """
     logger.info("uploader process has started")
     serv_pipe, client_pipe = pipe
@@ -50,13 +50,13 @@ def run(config, pipe):
 
     # setup tumblr client
     client = pytumblr.TumblrRestClient(
-        config.tumblr_consumer_key,
-        config.tumblr_consumer_secret,
-        config.tumblr_oauth_token,
-        config.tumblr_oauth_token_secret
+        conf['upload']['tumblr']['consumer_key'],
+        conf['upload']['tumblr']['consumer_secret'],
+        conf['upload']['tumblr']['oauth_token'],
+        conf['upload']['tumblr']['oauth_token_secret'],
     )
 
-    db_client = setup_dropbox_client(config)
+    db_client = setup_dropbox_client(conf)
 
     while True:
         try:
@@ -82,7 +82,7 @@ def run(config, pipe):
             # (2) prepare dropbox folder for the session
             if db_client:
                 start = time.time()
-                sess_dir = get_sess_dirname(config, sess_id)
+                sess_dir = get_sess_dirname(conf, sess_id)
                 db_client.file_create_folder(sess_dir)
                 shared = db_client.share(sess_dir)
                 logger.debug("dropbox_share: %s", shared)
@@ -93,13 +93,13 @@ def run(config, pipe):
             caption = u"<h1>Sesja %d</h1>" % sess_id
             if db_client:
                 caption += u"<a href=\"%s\">Zdjęcia do pobrania</a>" % shared['url']
-            post = client.create_photo(config.tumblr_blogname, state="published", tags=["hajtamysie"], data=gif_name, caption=caption, format="html")
+            post = client.create_photo(conf['upload']['tumblr']['blogname'], state="published", tags=["hajtamysie"], data=gif_name, caption=caption, format="html")
             logger.debug("create_photo: %s", post)
             logger.debug("create_photo time: %f seconds", (time.time() - start))
 
             # (4) retrieve and send the short_url ASAP
             start = time.time()
-            created_post = client.posts(config.tumblr_blogname, id=post['id'])
+            created_post = client.posts(conf['upload']['tumblr']['blogname'], id=post['id'])
             logger.debug("posts: %s", created_post)
             logger.debug("posts time: %f seconds", (time.time() - start))
             logger.debug("short URL: %s", created_post['posts'][0]['short_url'])

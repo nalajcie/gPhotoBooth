@@ -29,7 +29,7 @@ class WaitingState(SessionState):
     def update(self, button_pressed):
         if button_pressed:
             self.model.capture_start = datetime.datetime.now()
-            return CountdownState(self.model, self.model.conf.initial_countdown_secs)
+            return CountdownState(self.model, self.model.conf['control']['initial_countdown_secs'])
         return self
 
 
@@ -74,10 +74,10 @@ class CountdownState(TimedState):
         self.model.controller.set_text(text, True)
 
 
-class TakePictureState(TimedState):
+class TakePictureState(SessionState):
     """ taking single picture """
     def __init__(self, model):
-        super(TakePictureState, self).__init__(model, model.conf.image_display_secs)
+        super(TakePictureState, self).__init__(model)
         image_name = self.take_picture()
         logger.debug("TakePictureState: taking picutre: %s", image_name)
         self.model.controller.set_text(u"Nice!")
@@ -88,7 +88,7 @@ class TakePictureState(TimedState):
                 return ShowSessionMontageState(self.model)
             else:
                 self.model.controller.resume_live_view()
-                return CountdownState(self.model, self.model.conf.midphoto_countdown_secs)
+                return CountdownState(self.model, self.model.conf['control']['midphoto_countdown_secs'])
         else:
             return self
 
@@ -103,7 +103,7 @@ class TakePictureState(TimedState):
 class ShowSessionMontageState(TimedState):
     """ Showing animation at the end of the session """
     def __init__(self, model):
-        super(ShowSessionMontageState, self).__init__(model, model.conf.montage_display_secs)
+        super(ShowSessionMontageState, self).__init__(model, model.conf['control']['montage_display_secs'])
 
         img_lv_list = [sizes[1] for sizes in self.model.images.itervalues()]
         self.model.controller.stop_live_view()
@@ -164,7 +164,7 @@ class PhotoSessionModel(object):
 
     def idle(self):
         """ true/false idle timeout check """
-        return not self.capture_start and time.time() - self.session_start > self.conf.idle_secs
+        return not self.capture_start and time.time() - self.session_start > self.conf['control']['idle_secs']
 
     def get_finished_session_model(self):
         prev_images = [sizes[2] for sizes in self.images.itervalues()]
@@ -218,9 +218,9 @@ class PhotoBoothModel(object):
     def load_from_disk(self):
         """ try to load FinishedSessions from the disk """
         all_sessions = []
-        for dirname in os.listdir(self.conf.save_path):
+        for dirname in os.listdir(self.conf['event_dir']):
             #logger.debug("SCANNING: '%s'" % d)
-            path = os.path.join(self.conf.save_path, dirname)
+            path = os.path.join(self.conf['event_dir'], dirname)
             if os.path.isdir(path):
                 try:
                     sess_id = int(dirname)
@@ -261,7 +261,7 @@ class PhotoBoothModel(object):
 
     def get_session_dir(self, sess_id):
         """ get session dir name """
-        return os.path.join(self.conf.save_path, str(sess_id))
+        return os.path.join(self.conf['event_dir'], str(sess_id))
 
     def get_image_name(self, sess_id, count, img_type):
         """ get image file name for a given type"""
@@ -269,7 +269,7 @@ class PhotoBoothModel(object):
             img_filename = str(count) + '.jpg'
         else:
             img_filename = str(count) + '_' + img_type + '.jpg'
-        return os.path.join(self.conf.save_path, str(sess_id), img_filename)
+        return os.path.join(self.conf['event_dir'], str(sess_id), img_filename)
 
     def get_image_names_all(self, sess_id, count):
         """ get image file names for all sizes """
@@ -301,7 +301,7 @@ class PhotoBoothModel(object):
 
     def update_finished(self):
         """ update idle previews with finished sessions """
-        self.finished_sessions = self.finished_sessions[-self.conf.idle_previews_cnt:]
+        self.finished_sessions = self.finished_sessions[-self.conf['control']['idle_previews_cnt']:]
         logger.info("FINISED SESSIONS CNT: %d", len(self.finished_sessions))
         self.controller.notify_idle_previews_changed()
 

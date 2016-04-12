@@ -51,7 +51,8 @@ class PhotoBoothController(object):
         self.thread_capture.setDaemon(True)
 
         # upload background process (creating GIF is cpu-intensive, make it happen in other process to bypass GIL)
-        if self.conf.upload:
+        self.upload_pipe = None
+        if self.conf['upload']['enabled']:
             pipe = multiprocessing.Pipe()
             self.upload_pipe = pipe[0]
             self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, pipe))
@@ -70,7 +71,7 @@ class PhotoBoothController(object):
         self.thread_capture.start()
         self.button.start()
 
-        if self.conf.upload:
+        if self.conf['upload']['enabled']:
             self.process_upload.start()
 
         while self.is_running:
@@ -85,14 +86,14 @@ class PhotoBoothController(object):
                 fps_str = "[FPS]: %.2f" % (self.clock.get_fps())
                 pygame.display.set_caption(fps_str)
                 #logger.debug(fps_str)
-                self.next_fps_update_ticks = pygame.time.get_ticks() + self.conf.fps_update_ms
+                self.next_fps_update_ticks = pygame.time.get_ticks() + self.conf['debug']['fps_update_ms']
 
         self.quit()
 
     def quit(self):
         if self.model:
             self.model.quit()
-        if self.conf.upload and self.upload_pipe:
+        if self.upload_pipe:
             self.upload_pipe.close()
 
         pygame.quit()
@@ -151,7 +152,7 @@ class PhotoBoothController(object):
             self.camera.start_preview() # resume previews ASAP
 
             # (2) lights - default brightness
-            self.lights.set_brightness(self.conf.lights_default)
+            self.lights.set_brightness(self.conf["devices"]["lights_default"])
 
             # (3) load captured images and scale them
             logger.debug("capture_image_worker: reading and scalling images")
@@ -176,7 +177,7 @@ class PhotoBoothController(object):
 
     def capture_image(self, image_number, file_paths):
         # lights - maximum brightness
-        self.lights.set_brightness(self.conf.lights_full)
+        self.lights.set_brightness(self.conf["devices"]["lights_full"])
 
         # view: capture begin animation
         self.view.lv.pause()
@@ -197,7 +198,7 @@ class PhotoBoothController(object):
         return img
 
     def enqueue_animate_montage(self, img_list):
-        self.view.lv.enqueue_animate_montage(img_list, self.conf.montage_fps)
+        self.view.lv.enqueue_animate_montage(img_list, self.conf["control"]["montage_fps"])
 
     def notify_idle_previews_changed(self):
         prev_num = 1
@@ -209,5 +210,5 @@ class PhotoBoothController(object):
     def notify_finished_session(self, sess):
         """ Start work related with finished session processing - uploading and printing"""
         self.printer.print_session(sess.id, sess.medium_img_list)
-        if self.conf.upload:
+        if self.conf["upload"]["enabled"]:
             self.upload_pipe.send((sess.id, sess.get_medium_img_paths(), sess.get_full_img_paths()))

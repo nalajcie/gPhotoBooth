@@ -5,8 +5,9 @@
 import sys
 import argparse
 import logging
+import importlib
 
-from photobooth import controller, camera, config
+from photobooth import controller, config
 
 
 
@@ -31,28 +32,22 @@ def setup_logger():
 def parse_args():
     """ commandline args parsing and config reading """
     parser = argparse.ArgumentParser()
-    parser.add_argument("save_path", help="Location to save images")
-    parser.add_argument("-d", "--dummy", help="Use dummy camera instead of GPhoto interface", action="store_true")
+    parser.add_argument("event_dir", help="Event directory - place to read config and store images")
+    parser.add_argument("-d", "--dummy", help="Force dummy camera instead of GPhoto interface", action="store_true")
     parser.add_argument("-D", "--debug", help="Use debug configuration for easier development", action="store_true")
-    parser.add_argument("-f", "--fullscreen", help="Use fullscreen mode", action="store_true")
-    parser.add_argument("-P", "--printer", help="Use Thermal printer (default: NullPrinter)", action="store_true")
-    parser.add_argument("-u", "--upload", help="Upload images to Tumblr", action="store_true")
+    parser.add_argument("-f", "--fullscreen", help="Force fullscreen mode", action="store_true")
+    parser.add_argument("-u", "--upload", help="Force images upload to Tumblr", action="store_true")
     args = parser.parse_args()
 
-    if args.debug:
-        conf = config.Config.debug()
-    else:
-        conf = config.Config.default()
+    conf = config.read_config(args.event_dir)
 
-    conf.fullscreen |= args.fullscreen
-    conf.save_path = args.save_path
-    conf.thermal_printer |= args.printer
-    conf.dummy_camera |= args.dummy
-    conf.upload |= args.upload
+    conf['event_dir'] = args.event_dir
+    if args.dummy:
+        conf['camera']['driver'] = "DummyCamera"
 
-    if conf.upload:
-        conf.read_tumblr_config()
-        conf.read_dropbox_config()
+    conf['display']['fullscreen'] |= args.fullscreen
+    conf['control']['save_path'] = args.event_dir
+    conf['upload']['enabled'] |= args.upload
 
     return conf
 
@@ -66,10 +61,9 @@ def main():
     # setup CAMERA
     # this is done here to be able to close the camera in case of any excepion
     try:
-        if conf.dummy_camera:
-            cam = camera.DummyCamera()
-        else:
-            cam = camera.GPhotoCamera()
+        # setup PRINTER
+        camera_class = getattr(importlib.import_module("photobooth.camera"), conf['camera']['driver'])
+        cam = camera_class()
     except ValueError:
         logger.exception("Camera could not be initialised, exiting!")
         sys.exit(-1)
