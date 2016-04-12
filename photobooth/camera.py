@@ -19,6 +19,12 @@ class GPhotoCamera(object):
             raise ValueError("GPhotoCamera could not be initialised: %s" % exc.message)
         print "CAMERA: %s " % self.cam.abilities
 
+        # sync camera time with host
+        cc = self.cam.config
+        syncdate = cc.get_child_by_name("syncdatetime")
+        syncdate.value = 1
+        self.cam.config = cc
+
         self.preview_jpegs = Queue(maxsize=0)
         self.preview_surfaces = Queue(maxsize=0)
         self.curr_preview = pygame.Surface((1, 1)) # will be overriden by real image
