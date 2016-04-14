@@ -1,24 +1,23 @@
 # encoding: utf-8
-import yaml
-import os
-
 """
 Readout configuration from yaml file.
 
 Firstly the default file is loaded and then the values
 are updaded with custom config.
-
 """
+import yaml
+import os
+
 
 ## TODO: what with these:
-debug_override = {
-    'initial_countdown_secs': 1,
-    'midphoto_countdown_secs': 1,
-    'image_display_secs': 1,
-    'montage_display_secs': 5,
-    'idle_secs': 5,
-    'montage_fps': 4,
-}
+#debug_override = {
+#    'initial_countdown_secs': 1,
+#    'midphoto_countdown_secs': 1,
+#    'image_display_secs': 1,
+#    'montage_display_secs': 5,
+#    'idle_secs': 5,
+#    'montage_fps': 4,
+#}
 
 DEFAULT_CONFIG_FILE = "events/template/config.yaml"
 CONFIG_FILENAME = "config.yaml"

@@ -119,14 +119,13 @@ def run(conf, pipe):
                 db_client.put_file(dest_file, up_file)
             logger.debug("dropbox_upload time: %f seconds", (time.time() - start))
 
-            """
-            start = time.time()
-            imgs_to_upload = [gif_name]
-            imgs_to_upload.extend(file_list)
-            res = client.edit_post(config.tumblr_blogname, id=post['id'], data=imgs_to_upload)
-            logger.debug("reupload result: %s", res)
-            logger.debug("edit_post time: %f seconds", (time.time() - start))
-            """
+            # reuploading all images to tumbler - not used!
+            #start = time.time()
+            #imgs_to_upload = [gif_name]
+            #imgs_to_upload.extend(file_list)
+            #res = client.edit_post(config.tumblr_blogname, id=post['id'], data=imgs_to_upload)
+            #logger.debug("reupload result: %s", res)
+            #logger.debug("edit_post time: %f seconds", (time.time() - start))
             logger.info("uploading sess(%d) has finished", sess_id)
         except Exception:
             logger.exception("Uploader worker exception!")
