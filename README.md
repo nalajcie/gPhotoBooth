@@ -8,6 +8,7 @@ Features:
 * fancy UI with shutter animation
 * automatic GIF creation
 * uploading GIFs to tumblr
+* uploading full-size images to Dropbox (and share link via tumblr)
 * peripherials: controlling via external led pushbutton, controlling lights
 * printing using Thermal Printer
 
@@ -28,7 +29,7 @@ Specific commands are for ubuntu/debian based systems.
   sudo easy_install local_modules/pytumblr  # for uploading to tumblr
   ```
 
-3. Dropbox SDK for full images storage
+3. Dropbox SDK for full images uploading
   ```bash
   wget https://www.dropbox.com/developers/downloads/sdks/core/python/dropbox-python-sdk-2.2.0.zip
   unzip dropbox-python-sdk-2.2.0.zip
@@ -39,10 +40,10 @@ Specific commands are for ubuntu/debian based systems.
 
 4. (for using real camera) libgphoto2 + gPhoto2 for troubleshooting
   ```bash
-  sudo apt-get install libgphoto2-6
+  sudo apt-get install libgphoto2-6 gphoto2
   ```
 
-5. disabling system services grabbing gphoto2. For Pi comment out (using '#') the lines in this file:
+5. disable system services grabbing gphoto2. For Pi comment out (using '#') the lines in this file:
   ``` bash
   sudo vim /usr/share/dbus-1/services/org.gtk.Private.GPhoto2VolumeMonitor.service
   ```
@@ -65,8 +66,14 @@ Specific commands are for ubuntu/debian based systems.
   TODO: include detailed steps to rebuild libjpegturbo on Pi.
 
 ## Configuration
-For now configuration is hardcoded in photobooth/config.py and/or provided as commandline params (see usage).
-TODO: create neat yaml configuration file
+Configuration is stored in single YAML file. The default configuration is in `events/template/config.yaml`.
+Default config file is always read first, then the "event" config file overrides the defaults.
+
+For creating new "event" (photo session), create the event directory, copy default config file and edit it:
+```bash
+cp -r events/template events/event_name
+vim events/event_name/config.yaml
+```
 
 ## Running
 ### Notes
@@ -82,7 +89,8 @@ TODO: create neat yaml configuration file
 
 2. Photobooth application
   ```bash
-  ./photobooth.py .
+  cp -r events/template events/tmp
+  ./photobooth.py events/tmp
   ```
 
 3. Photobooth application with camera emulation (no gPhoto2 camera attached)
@@ -93,7 +101,7 @@ TODO: create neat yaml configuration file
 4. Note: for dimming button functionality You have to run it with sudo (hardware PWM needs this). You need to
 setup necessary ENV variables (or use properly env\_keep/env\_reset in /etc/sudoers)
   ```bash
-  sudo DISPLAY=:0 python photobooth.py -d tmp/
+  sudo DISPLAY=:0 python photobooth.py events/tmp
   ```
   If You do not need dimming button but still want to have "normal button" and launch the app, instruct
   wiringPi to use non-root mode:
