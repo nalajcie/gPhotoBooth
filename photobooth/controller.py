@@ -74,6 +74,9 @@ class PhotoBoothController(object):
         if self.conf['upload']['enabled']:
             self.process_upload.start()
 
+        # first session is for setting up, fire lights at full brightness
+        self.lights.set_brightness(self.conf["devices"]["lights_full"])
+
         while self.is_running:
             self.clock.tick(self.view.fps)
             button_pressed = self.process_events()

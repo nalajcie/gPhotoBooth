@@ -164,7 +164,10 @@ class PhotoSessionModel(object):
 
     def idle(self):
         """ true/false idle timeout check """
-        return not self.capture_start and time.time() - self.session_start > self.conf['control']['idle_secs']
+        if self.booth_model.is_first_session:
+            return False # first session is the setup session, without timeout
+        else:
+            return not self.capture_start and time.time() - self.session_start > self.conf['control']['idle_secs']
 
     def get_finished_session_model(self):
         prev_images = [sizes[2] for sizes in self.images.itervalues()]
@@ -214,6 +217,7 @@ class PhotoBoothModel(object):
         self.current_sess = None
         self.next_photo_session = 1
         self.finished_sessions = []
+        self.is_first_session = True
 
     def load_from_disk(self):
         """ try to load FinishedSessions from the disk """
@@ -288,7 +292,7 @@ class PhotoBoothModel(object):
 
     def end_session(self):
         """ work to be done when session ends """
-        logging.debug("PhotoSession END")
+        self.is_first_session = False # first session is the setup one, next will timeout in idle
         # stop the lights
         self.controller.lights.pause()
 

@@ -50,7 +50,7 @@ def parse_args():
     conf['control']['save_path'] = args.event_dir
     conf['upload']['enabled'] |= args.upload
 
-    # TODO: how to make setup mode using pushbutton?
+    # NOTE: also the first session will be the "setting up" one
     if args.setup:
         conf['control']['idle_secs'] = 360
         conf['devices']['lights_default'] = conf['devices']['lights_full']
