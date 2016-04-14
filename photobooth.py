@@ -79,11 +79,13 @@ def main():
         booth.run()
     except Exception:
         logger.exception("MAIN: Unhandled exception!")
-        booth.quit()
-
+        if booth:
+            booth.quit()
+            booth = None
     finally:
         logger.error("MAIN: Finally: closing camera!")
-        booth.quit()
+        if booth:
+            booth.quit()
         #cam.close()
         logger.info("Finished successfully!")
 
