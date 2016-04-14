@@ -32,10 +32,10 @@ class PrinterProxy(object):
         obj = (img_pygame.get_size(), pygame.image.tostring(img_pygame, "RGB"))
         self.printer_pipe.send((PrinterProxy.REQ_SINGLE_IMG, obj))
 
-    def print_session(self, sess_id, sess_imgs):
+    def print_session(self, sess_id, sess_imgs, sess_tags):
         """ pretty-print the whole photosession """
         img_objs = [(img.get_size(), pygame.image.tostring(img, "RGB")) for img in sess_imgs]
-        self.printer_pipe.send((PrinterProxy.REQ_FULL_SESS, (sess_id, img_objs)))
+        self.printer_pipe.send((PrinterProxy.REQ_FULL_SESS, (sess_id, img_objs, sess_tags)))
 
     def __del__(self):
         self.printer_pipe.close()
@@ -64,8 +64,8 @@ class AbstractPrinter(object):
                 if req_id == PrinterProxy.REQ_SINGLE_IMG:
                     self.print_image(req_data)
                 elif req_id == PrinterProxy.REQ_FULL_SESS:
-                    sess_id, sess_imgs = req_data
-                    self.print_session(sess_id, sess_imgs)
+                    sess_id, sess_imgs, sess_tags = req_data
+                    self.print_session(sess_id, sess_imgs, sess_tags)
                 else:
                     logger.error("unknown printer request: %d", req_id)
                 logger.info("printer request finished: %d, time: %f seconds", req_id, (time.time() - start))
@@ -123,7 +123,7 @@ class ThermalPrinter(AbstractPrinter):
         self.printer.println(arg.encode('iso8859-2'))
 
 
-    def print_session(self, sess_id, sess_imgs):
+    def print_session(self, sess_id, sess_imgs, sess_tags):
         """ pretty-print the whole photosession """
         # (0) wake the printer
         self.printer.wake()
@@ -149,9 +149,19 @@ class ThermalPrinter(AbstractPrinter):
         if self.conf['printer']['print_all_imgs']:
             for img in sess_imgs:
                 self.print_image(img)
+
+                # print session tags sequentally
+                #if len(sess_tags):
+                #    self.println(u'#'+sess_tags.pop())
+                #    self.printer.feed(1)
         else:
             # we're printing only the last image, because the printer heats too much and darkens the images
             self.print_image(sess_imgs[3])
+
+        # print session tags all at once
+        while len(sess_tags):
+            self.println(u'#'+sess_tags.pop())
+        self.printer.feed(1)
 
         # (4) add some final text
         self.println(time.strftime("%Y-%m-%d %H:%M:%S"))
@@ -193,7 +203,7 @@ class NullPrinter(AbstractPrinter):
         self.print_cnt += 1
         time.sleep(3) # simulate printing time
 
-    def print_session(self, sess_id, sess_imgs):
+    def print_session(self, sess_id, sess_imgs, sess_tags):
         """ pretty-print the whole photosession """
         #no-op
         pass

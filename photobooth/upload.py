@@ -60,7 +60,7 @@ def run(conf, pipe):
 
     while True:
         try:
-            sess_id, medium_file_list, full_file_list = client_pipe.recv()
+            sess_id, medium_file_list, full_file_list, tags = client_pipe.recv()
         except EOFError:
             break
         except IOError:
@@ -93,7 +93,7 @@ def run(conf, pipe):
             caption = u"<h1>Sesja %d</h1>" % sess_id
             if db_client:
                 caption += u"<a href=\"%s\">Zdjęcia do pobrania</a>" % shared['url']
-            post = client.create_photo(conf['upload']['tumblr']['blogname'], state="published", tags=["hajtamysie"], data=gif_name, caption=caption, format="html")
+            post = client.create_photo(conf['upload']['tumblr']['blogname'], state="published", tags=tags, data=gif_name, caption=caption, format="html")
             logger.debug("create_photo: %s", post)
             logger.debug("create_photo time: %f seconds", (time.time() - start))
             if not post or not 'id' in post:

@@ -75,6 +75,7 @@ def main():
         sys.exit(-1)
 
     try:
+        booth = None # guard against exception in constructor
         booth = controller.PhotoBoothController(conf, cam)
         booth.run()
     except Exception:

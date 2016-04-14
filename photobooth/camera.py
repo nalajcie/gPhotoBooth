@@ -6,7 +6,6 @@ import thread # for interrupt_main
 from Queue import Queue
 
 import pygame
-import sys
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)

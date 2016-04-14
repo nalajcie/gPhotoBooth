@@ -2,6 +2,7 @@
 import os
 import time
 import datetime
+import random
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
@@ -172,7 +173,7 @@ class PhotoSessionModel(object):
     def get_finished_session_model(self):
         prev_images = [sizes[2] for sizes in self.images.itervalues()]
         medium_images = [sizes[1] for sizes in self.images.itervalues()]
-        return FinishedSessionModel(self.booth_model, self.id, prev_images, medium_images)
+        return FinishedSessionModel(self.booth_model, self.id, prev_images, medium_images, self.conf['random_tags'])
 
     def finished(self):
         """ returns True if this session is finished """
@@ -180,11 +181,15 @@ class PhotoSessionModel(object):
 
 class FinishedSessionModel(object):
     """ finised session previews to be displayed in idle screen """
-    def __init__(self, booth_model, sess_id, img_list, medium_img_list):
+    def __init__(self, booth_model, sess_id, img_list, medium_img_list, random_tags_conf):
         self.id = sess_id
         self.booth_model = booth_model
         self.img_list = img_list
         self.medium_img_list = medium_img_list
+        self.random_tags = []
+        if random_tags_conf and random_tags_conf['enabled']:
+            self.random_tags = random.sample(random_tags_conf['list'], random_tags_conf['count'])
+
 
     def get_medium_img_paths(self):
         return [self.booth_model.get_image_name(self.id, photo_no, 'medium') for photo_no in xrange(1, 5)]
@@ -204,7 +209,7 @@ class FinishedSessionModel(object):
             except Exception:
                 raise ValueError # error while opening/reading file, incomplete photo session
 
-        return cls(booth_model, sess_id, img_list, None) # do not care about medium images
+        return cls(booth_model, sess_id, img_list, None, None) # do not care about medium images
 
 
 class PhotoBoothModel(object):

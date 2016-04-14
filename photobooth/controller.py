@@ -215,6 +215,6 @@ class PhotoBoothController(object):
 
     def notify_finished_session(self, sess):
         """ Start work related with finished session processing - uploading and printing"""
-        self.printer.print_session(sess.id, sess.medium_img_list)
+        self.printer.print_session(sess.id, sess.medium_img_list, sess.random_tags)
         if self.conf["upload"]["enabled"]:
-            self.upload_pipe.send((sess.id, sess.get_medium_img_paths(), sess.get_full_img_paths()))
+            self.upload_pipe.send((sess.id, sess.get_medium_img_paths(), sess.get_full_img_paths(), sess.random_tags))

@@ -81,6 +81,17 @@ upload:
         access_token:  dropbox_access_token
 
 
+# if you want random tags/s to be printed/uploaded to tumblr, enable it here:
+random_tags:
+    enabled:    False
+    count:      4
+    list:
+        - tag1
+        - tag2
+        - tag3
+        - tag4
+        - tag5
+
 # some debug vars
 debug:
     fps_update_ms: 2000
