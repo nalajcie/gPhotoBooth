@@ -37,6 +37,7 @@ def parse_args():
     parser.add_argument("-D", "--debug", help="Use debug configuration for easier development", action="store_true")
     parser.add_argument("-f", "--fullscreen", help="Force fullscreen mode", action="store_true")
     parser.add_argument("-u", "--upload", help="Force images upload to Tumblr", action="store_true")
+    parser.add_argument("-s", "--setup", help="Use this mode to setup the camera", action="store_true")
     args = parser.parse_args()
 
     conf = config.read_config(args.event_dir)
@@ -48,6 +49,11 @@ def parse_args():
     conf['display']['fullscreen'] |= args.fullscreen
     conf['control']['save_path'] = args.event_dir
     conf['upload']['enabled'] |= args.upload
+
+    # TODO: how to make setup mode using pushbutton?
+    if args.setup:
+        conf['control']['idle_secs'] = 360
+        conf['devices']['lights_default'] = conf['devices']['lights_full']
 
     return conf
 
@@ -72,11 +78,13 @@ def main():
         booth = controller.PhotoBoothController(conf, cam)
         booth.run()
     except Exception:
-        logger.exception("Unhandled exception!")
-        cam.close()
-        sys.exit(-1)
+        logger.exception("MAIN: Unhandled exception!")
+        booth.quit()
+
     finally:
-        cam.close()
+        logger.error("MAIN: Finally: closing camera!")
+        booth.quit()
+        #cam.close()
         logger.info("Finished successfully!")
 
 if __name__ == '__main__':

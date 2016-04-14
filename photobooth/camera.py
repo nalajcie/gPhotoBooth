@@ -2,9 +2,11 @@
 from local_modules import piggyphoto
 from StringIO import StringIO
 from threading import Thread, Lock, Condition
+import thread # for interrupt_main
 from Queue import Queue
 
 import pygame
+import sys
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
@@ -18,6 +20,12 @@ class GPhotoCamera(object):
         except piggyphoto.libgphoto2error, exc:
             raise ValueError("GPhotoCamera could not be initialised: %s" % exc.message)
         print "CAMERA: %s " % self.cam.abilities
+
+        # sync camera time with host
+        cc = self.cam.config
+        syncdate = cc.get_child_by_name("syncdatetime")
+        syncdate.value = 1
+        self.cam.config = cc
 
         self.preview_jpegs = Queue(maxsize=0)
         self.preview_surfaces = Queue(maxsize=0)
@@ -53,7 +61,11 @@ class GPhotoCamera(object):
                 return
 
             with self.camera_lock:
-                cfile = self.cam.capture_preview()
+                try:
+                    cfile = self.cam.capture_preview()
+                except piggyphoto.libgphoto2error:
+                    logger.error("CAMERA EXCEPTION, EXITING!")
+                    thread.interrupt_main()
                 picture = StringIO(cfile.get_data())
                 self.preview_jpegs.put(picture)
                 #logger.debug("capture_worker: preview captured!, queue size: %d" % self.preview_jpegs.qsize())
@@ -105,7 +117,11 @@ class GPhotoCamera(object):
         """ Full-size image capture and save to destination """
         logger.debug("capture_image")
         with self.camera_lock:
-            self.cam.capture_image(file_path)
+            try:
+                self.cam.capture_image(file_path)
+            except piggyphoto.libgphoto2error:
+                logger.error("CAMERA EXCEPTION, EXITING!")
+                thread.interrupt_main()
         logger.debug("capture_image END")
 
     def close(self):

@@ -46,17 +46,20 @@ class Button(base.Peripherial):
         wiringpi2.pinMode(self.LED_PIN, wiringpi2.GPIO.PWM_OUTPUT)
         self.thread_pwm_worker = Thread(target=self.pwm_worker)
         self.thread_pwm_worker.setDaemon(True)
+        self.pwm_worker_working = False
         self.button_pressed = 0
 
     def __del__(self):
+        self.pwm_worker_working = False
         wiringpi2.pwmWrite(self.LED_PIN, 0)
 
     def start(self):
+        self.pwm_worker_working = True
         self.thread_pwm_worker.start()
 
     def pwm_worker(self):
         """ run in different thread """
-        while True:
+        while self.pwm_worker_working:
             for i in xrange(self.LED_DUTY_MIN, self.LED_DUTY_MAX + 1, self.LED_DUTY_STEP):
                 wiringpi2.pwmWrite(self.LED_PIN, i)
                 time.sleep(0.02)
@@ -66,6 +69,9 @@ class Button(base.Peripherial):
             for i in xrange(self.LED_DUTY_MAX, self.LED_DUTY_MIN - 1, -self.LED_DUTY_STEP):
                 wiringpi2.pwmWrite(self.LED_PIN, i)
                 time.sleep(0.02)
+
+        #exiting: poweroff the button:
+        wiringpi2.pwmWrite(self.LED_PIN, 0)
 
 
     def pause(self):

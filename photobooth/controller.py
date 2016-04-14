@@ -39,7 +39,7 @@ class PhotoBoothController(object):
         self.lights = platform.Lights()
         self.button.register_callback(self.button_callback)
 
-        # view nad model
+        # view and model
         self.is_running = False
         self.view = view.PygView(self, self.conf, self.camera)
         self.model = model.PhotoBoothModel(self)
@@ -91,10 +91,13 @@ class PhotoBoothController(object):
         self.quit()
 
     def quit(self):
+        self.is_running = False
         if self.model:
             self.model.quit()
+            self.model = None
         if self.upload_pipe:
             self.upload_pipe.close()
+            self.upload_pipe = None
 
         pygame.quit()
 

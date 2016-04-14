@@ -131,3 +131,5 @@ def run(conf, pipe):
         except Exception:
             logger.exception("Uploader worker exception!")
 
+    logger.info("uploader worker exiting!")
+
