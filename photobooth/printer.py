@@ -76,7 +76,7 @@ class AbstractPrinter(object):
         """ debug: printing single image """
         raise NotImplementedError
 
-    def print_session(self, sess_id, sess_imgs):
+    def print_session(self, sess_id, sess_imgs, sess_tags):
         """ pretty-print the whole photosession """
         raise NotImplementedError
 
