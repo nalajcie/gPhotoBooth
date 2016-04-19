@@ -32,7 +32,7 @@ printer:
             rtscts: 1
 
             #heat_time: 200
-            heat_time: 120
+            heat_time: 160
             heat_dots: 7
             heat_interval: 25
 
