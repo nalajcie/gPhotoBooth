@@ -20,6 +20,7 @@ printer:
     logo: assets/nalajcie-logo.png
     name: Event Name
     url: http://example.com/
+    end_text: ""
     print_all_imgs: false
 
     # thermal printer specifications

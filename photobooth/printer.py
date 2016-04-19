@@ -166,9 +166,17 @@ class ThermalPrinter(AbstractPrinter):
         # (4) add some final text
         self.println(time.strftime("%Y-%m-%d %H:%M:%S"))
         self.println("Sesja nr: %d" % sess_id)
-        self.printer.feed(3)
 
-        # (5) put printer back to sleep
+        # (5) add 'end_text' if provided
+        if 'end_text' in self.conf['printer'] and len(self.conf['printer']['end_text']) > 0:
+            self.printer.feed(1)
+            self.printer.justify('C')
+            for line in self.conf['printer']['end_text'].strip().split('\n'):
+                self.println(line)
+            self.printer.justify('L')
+
+        # (6) feed out and put printer back to sleep
+        self.printer.feed(3)
         self.printer.sleep()
 
 class NullPrinter(AbstractPrinter):
