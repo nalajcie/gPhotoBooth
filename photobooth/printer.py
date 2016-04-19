@@ -130,7 +130,7 @@ class ThermalPrinter(AbstractPrinter):
 
         # (1) print logo as RAW IMAGE
         self.printer.printImage(self.logo, False)
-        self.printer.feed(1)
+        #self.printer.feed(1)
 
         # (2) add header text
         self.printer.justify('C')
