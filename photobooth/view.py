@@ -180,14 +180,14 @@ class LivePreview(PhotoPreview):
         self.load_begin_overlay_animation_frames("assets/shutter/big/shutter%02d.png", 0, 8)
         self.load_end_overlay_animation_frames("assets/shutter/big/shutter%02d.png", 8, 16)
         self._show_arrow = False
-        self.arrow_img = self.get_arrow_overlay()
+        self.arrow_img = self.get_arrow_overlay(conf)
         self.arrow_rect = self.arrow_img.get_rect()
         self.arrow_rect.center = (self.width() / 2, self.height() / 2)
 
         self.stop()
 
     @staticmethod
-    def get_arrow_overlay():
+    def get_arrow_overlay(conf):
         """ prepares the transparent image with arrow pointing the camera  """
         w, h = (600, 400)
         arrow = pygame.Surface((w, h), flags=pygame.SRCALPHA)
@@ -195,7 +195,7 @@ class LivePreview(PhotoPreview):
                 ((200, 300), (200, 200), (0, 200), (300, 0),
                     (600, 200), (400, 200), (400, 300)))
         font = pygame.font.SysFont(pygame.font.get_default_font(), 100)
-        line = font.render("Patrz w obiektyw!", True, (255, 255, 255))
+        line = font.render(conf['m']['arrow_text'], True, (255, 255, 255))
         line_pos = line.get_rect()
         line_pos.center = (w / 2, 350)
 
@@ -380,7 +380,7 @@ class PygView(object):
                 top_offset += SmallPhotoPreview.height() + self.conf['layout']['idle_space']
 
         self.idle_textbox = TextBox(self.idleview_group, self.conf, (idle_total_width, TextBox.height()), (screen_width / 2, top_offset + TextBox.height() / 2))
-        self.idle_textbox.draw_text("Push a button!")
+        self.idle_textbox.draw_text(self.conf['m']['idle_pushbutton'])
 
 
     @property
@@ -390,7 +390,7 @@ class PygView(object):
     @idle.setter
     def idle(self, val):
         self.is_idle = val
-        logger.info("Idle: %s", val)
+        #logger.info("Idle: %s", val)
         self.canvas.blit(self.back_image, (0, 0))
         # ensure we will update full screen, not only dirty rects
         pygame.display.flip()

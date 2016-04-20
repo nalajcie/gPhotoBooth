@@ -1,0 +1,18 @@
+arrow_text:         "Look at the camera!"
+idle_pushbutton:    "Push the button!"
+start_pushbutton:   "Push when ready" 
+after_capture:      
+    - [dummy]
+    - Nice, next picture in 3 seconds!
+    - Extra, 2 more to go
+    - And the last one...
+    - Finished!
+during_merge: |
+    Printing...
+    Generating GIF...
+    Uploading...
+    Enjoying time with You...
+print_session_no:   "Session no: %d"
+upload_session_title:   "Session %d"
+upload_session_dir:     "session_%d"
+upload_download_photos: "Download full-res photos"

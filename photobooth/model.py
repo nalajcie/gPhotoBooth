@@ -3,6 +3,7 @@ import os
 import time
 import datetime
 import random
+import math
 
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
@@ -25,7 +26,7 @@ class WaitingState(SessionState):
     def __init__(self, model):
         super(WaitingState, self).__init__(model)
         self.model.controller.start_live_view()
-        self.model.controller.set_text("Push when ready!")
+        self.model.controller.set_text(self.model.conf['m']['start_pushbutton'])
 
     def update(self, button_pressed):
         if button_pressed:
@@ -39,6 +40,7 @@ class TimedState(SessionState):
     def __init__(self, model, timer_length_s):
         super(TimedState, self).__init__(model)
         self.timer = time.time() + timer_length_s
+        self.duration = timer_length_s
 
     def time_up(self):
         """ helper to check for timeout """
@@ -81,7 +83,7 @@ class TakePictureState(SessionState):
         super(TakePictureState, self).__init__(model)
         image_name = self.take_picture()
         logger.debug("TakePictureState: taking picutre: %s", image_name)
-        self.model.controller.set_text(u"Nice!")
+        self.model.controller.set_text(self.model.conf['m']['after_capture'][self.model.photo_count])
 
     def update(self, button_pressed):
         if self.model.photo_count in self.model.images:
@@ -110,6 +112,9 @@ class ShowSessionMontageState(TimedState):
         self.model.controller.stop_live_view()
         self.model.controller.enqueue_animate_montage(img_lv_list)
 
+        self.text_arr = self.model.conf['m']['during_merge'].strip().split("\n")
+        self.single_text_duration = float(self.duration) / len(self.text_arr)
+
         # start work on finished session
         finished_sess = self.model.get_finished_session_model()
         self.model.controller.notify_finished_session(finished_sess)
@@ -124,16 +129,12 @@ class ShowSessionMontageState(TimedState):
     def update_text(self):
         """ updating funny text in the textarea """
         time_remaining = self.timer - time.time()
+        if time_remaining <= 0:
+            return
 
-        int_time = int(time_remaining)
-        if int_time == 8:
-            self.model.controller.set_text("Generating GIF...")
-        elif int_time == 6:
-            self.model.controller.set_text("Uploading...")
-        elif int_time == 4:
-            self.model.controller.set_text("Printing...")
-        elif int_time == 2:
-            self.model.controller.set_text("Enjoying time with You...")
+        idx = int(math.ceil(time_remaining / self.single_text_duration))
+        self.model.controller.set_text(self.text_arr[-idx])
+
 
 class PhotoSessionModel(object):
     """

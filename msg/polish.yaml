@@ -1,0 +1,22 @@
+arrow_text:         "Patrz w obiektyw!"
+idle_pushbutton:    "Naciśnij przycisk!"
+start_pushbutton:   "Naciśnij gdy będziesz gotowy"
+after_capture:
+    - [dummy]
+    - Super, następne zdjęcie za 3 sekundy
+    - Ekstra, jeszcze 2
+    - A teraz zrób coś szalonego!
+    - Ostatnie!
+during_merge: |
+    Drukowanie
+    Generowanie GIFa
+    Wysyłanie
+    (wciąż drukowanie)
+    Myślenie nad sensem świata
+    (w tle się cały czas wysyła)
+    :)
+print_session_no:       "Sesja nr: %d"
+upload_session_title:   "Sesja %d"
+upload_session_dir:     "sesja_%d"
+upload_download_photos: "Zdjęcia do pobrania"
+

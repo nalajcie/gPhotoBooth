@@ -14,7 +14,7 @@ def get_gif_filename(file_name):
     return os.path.join(os.path.dirname(file_name), GIF_FILENAME)
 
 def get_sess_dirname(conf, sess_id):
-    return os.path.join(conf['event_dir'], "sesja_%d" % sess_id)
+    return os.path.join(conf['event_dir'], conf['m']['upload_session_dir'] % sess_id)
 
 def setup_dropbox_client(conf):
     """ Setuping dropbox client and basic folder structure """
@@ -90,9 +90,9 @@ def run(conf, pipe):
 
             # (3) upload only the GIF
             start = time.time()
-            caption = u"<h1>Sesja %d</h1>" % sess_id
+            caption = (u"<h1>" + conf['m']['upload_session_title'] + "</h1>") % sess_id
             if db_client:
-                caption += u"<a href=\"%s\">Zdjęcia do pobrania</a>" % shared['url']
+                caption += u"<a href=\"%s\">%s</a>" % (shared['url'], conf['m']['upload_download_photos'])
             post = client.create_photo(conf['upload']['tumblr']['blogname'], state="published", tags=tags, data=gif_name, caption=caption, format="html")
             logger.debug("create_photo: %s", post)
             logger.debug("create_photo time: %f seconds", (time.time() - start))

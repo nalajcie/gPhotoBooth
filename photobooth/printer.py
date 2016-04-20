@@ -165,7 +165,7 @@ class ThermalPrinter(AbstractPrinter):
 
         # (4) add some final text
         self.println(time.strftime("%Y-%m-%d %H:%M:%S"))
-        self.println("Sesja nr: %d" % sess_id)
+        self.println(self.conf['m']['print_session_no'] % sess_id)
 
         # (5) add 'end_text' if provided
         if 'end_text' in self.conf['printer'] and len(self.conf['printer']['end_text']) > 0:

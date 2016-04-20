@@ -21,7 +21,7 @@ printer:
     name: Event Name
     url: http://example.com/
     end_text: ""
-    print_all_imgs: false
+    print_all_imgs: false       # if true, extend montage_display_secs to 12-15
 
     # thermal printer specifications
     thermal:
@@ -47,6 +47,7 @@ control:
     idle_secs:                  30
     montage_fps:                4
     idle_previews_cnt:          16
+    message_file:               msg/english.yaml
 
 view:
     # whole screen drawing-related consts
