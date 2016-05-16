@@ -63,6 +63,7 @@ def main():
     logger = setup_logger()
     conf = parse_args()
     logger.info("Full configuration: %s", conf)
+    finished_normally = False
 
     # setup CAMERA
     # this is done here to be able to close the camera in case of any excepion
@@ -78,6 +79,7 @@ def main():
         booth = None # guard against exception in constructor
         booth = controller.PhotoBoothController(conf, cam)
         booth.run()
+        finished_normally = True
     except Exception:
         logger.exception("MAIN: Unhandled exception!")
         if booth:
@@ -89,6 +91,8 @@ def main():
             booth.quit()
         #cam.close()
         logger.info("Finished successfully!")
+        if not finished_normally:
+            sys.exit(1)
 
 if __name__ == '__main__':
     main()
