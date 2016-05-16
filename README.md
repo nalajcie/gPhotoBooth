@@ -66,14 +66,25 @@ Specific commands are for ubuntu/debian based systems.
   TODO: include detailed steps to rebuild libjpegturbo on Pi.
 
 ## Configuration
+### Configuration format
 Configuration is stored in single YAML file. The default configuration is in `events/template/config.yaml`.
 Default config file is always read first, then the "event" config file overrides the defaults.
 
+### Event configuration
 For creating new "event" (photo session), create the event directory, copy default config file and edit it:
 ```bash
 cp -r events/template events/event_name
 vim events/event_name/config.yaml
 ```
+
+### Tumblr
+For uploading posts to tumblr You will need an API key. For doing so
+1. You need to register to tumblr
+2. You need to register an app (any name fits, only You will be using it anyway)
+  It can be done at: https://www.tumblr.com/oauth/register
+3. Go to https://api.tumblr.com/console/calls/user/info and provide Your consumer key/secret
+4. Copy `token_key` and `token_secret` to YAML config file.
+
 
 ## Running
 ### Notes
