@@ -102,6 +102,7 @@ class PhotoBoothController(object):
             self.upload_pipe.close()
             self.upload_pipe = None
 
+        self.lights.set_brightness(0)
         pygame.quit()
 
     def button_callback(self):
