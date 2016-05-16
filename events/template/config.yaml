@@ -78,9 +78,11 @@ upload:
         oauth_token:        TOKEN
         oauth_token_secret: TOKEN_SECRET
     dropbox:
-        app_key:       dropbox_app_key
-        app_secret:    dropbox_app_secret
-        access_token:  dropbox_access_token
+        # you can disable full-size photos sharing by setting below to 'False'
+        enabled:        True
+        app_key:        dropbox_app_key
+        app_secret:     dropbox_app_secret
+        access_token:   dropbox_access_token
 
 
 # if you want random tags/s to be printed/uploaded to tumblr, enable it here:

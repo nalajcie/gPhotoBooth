@@ -18,6 +18,9 @@ def get_sess_dirname(conf, sess_id):
 
 def setup_dropbox_client(conf):
     """ Setuping dropbox client and basic folder structure """
+    if not 'dropbox' in conf['upload'] or not conf['upload']['dropbox']['enabled']:
+        return None
+
     db_client = dropbox.client.DropboxClient(conf['upload']['dropbox']['access_token'])
     try:
         account_info = db_client.account_info()
@@ -109,15 +112,16 @@ def run(conf, pipe):
             client_pipe.send((sess_id, created_post['posts'][0]['short_url']))
 
             # (5) reupload GIF + upload remaining files onto dropbox
-            start = time.time()
-            imgs_to_upload = [gif_name]
-            imgs_to_upload.extend(full_file_list)
-            for img in imgs_to_upload:
-                up_file = open(img, "rb")
-                dest_file = sess_dir + "/" + os.path.basename(img)
-                logging.debug("Dropbox: uploading file to: %s", dest_file)
-                db_client.put_file(dest_file, up_file)
-            logger.debug("dropbox_upload time: %f seconds", (time.time() - start))
+            if db_client:
+                start = time.time()
+                imgs_to_upload = [gif_name]
+                imgs_to_upload.extend(full_file_list)
+                for img in imgs_to_upload:
+                    up_file = open(img, "rb")
+                    dest_file = sess_dir + "/" + os.path.basename(img)
+                    logging.debug("Dropbox: uploading file to: %s", dest_file)
+                    db_client.put_file(dest_file, up_file)
+                logger.debug("dropbox_upload time: %f seconds", (time.time() - start))
 
             # reuploading all images to tumbler - not used!
             #start = time.time()
