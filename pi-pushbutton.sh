@@ -1,3 +1,3 @@
 #!/bin/bash
-ssh pi@raspberrypi.local "DISPLAY=:0 xdotool key space"
+ssh pi@photobooth.local "DISPLAY=:0 xdotool key space"
 
