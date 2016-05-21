@@ -115,8 +115,9 @@ class Lights(base.Peripherial):
     PWM_VAL_MAX = 1024
 
     def __init__(self):
-        # hardware PWM led
+        # hardware PWM led (and power off lights)
         wiringpi2.pinMode(self.LIGHTS_PIN, wiringpi2.GPIO.PWM_OUTPUT)
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_MAX)
 
     def __del__(self):
         wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_MAX)
