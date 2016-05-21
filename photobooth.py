@@ -86,12 +86,12 @@ def main():
             booth.quit()
             booth = None
     finally:
-        logger.error("MAIN: Finally: closing camera!")
         if booth:
             booth.quit()
-        #cam.close()
-        logger.info("Finished successfully!")
+
+        logger.info("EXIT")
         if not finished_normally:
+            logger.info("exited with error code: 1")
             sys.exit(1)
 
 if __name__ == '__main__':
