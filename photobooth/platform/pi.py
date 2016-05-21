@@ -103,11 +103,15 @@ class Button(base.Peripherial):
         self.button_callback = callback_f
 
 class Lights(base.Peripherial):
-    """ Controlling moddeling POWER LED lights """
+    """
+    Controlling moddeling POWER LED lights.
+    Note: because of the circuit the logic is inverted (1024: off, 0: fully on)
+    Also because of MOSFET used everything above value 150 will start to visibly flicker.
+    """
 
     LIGHTS_PIN = 13 # GPIO -> board pin 33
 
-    PWM_VAL_DEFAULT = 512
+    PWM_VAL_DEFAULT = 100
     PWM_VAL_MAX = 1024
 
     def __init__(self):
@@ -115,7 +119,7 @@ class Lights(base.Peripherial):
         wiringpi2.pinMode(self.LIGHTS_PIN, wiringpi2.GPIO.PWM_OUTPUT)
 
     def __del__(self):
-        wiringpi2.pwmWrite(self.LIGHTS_PIN, 0)
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_MAX)
 
     def start(self):
         wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_DEFAULT)
@@ -127,6 +131,6 @@ class Lights(base.Peripherial):
         wiringpi2.pwmWrite(self.LIGHTS_PIN, b)
 
     def pause(self):
-        wiringpi2.pwmWrite(self.LIGHTS_PIN, 0)
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_MAX)
 
 

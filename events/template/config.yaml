@@ -9,8 +9,9 @@ display:
 
     # peripherials-related values
 devices:
-    lights_default: 512
-    lights_full: 1024
+    # note: the lights logic is inverted 0: full open, everything above 150 will start to flicker
+    lights_default: 100
+    lights_full: 0
 
 camera:
     driver: DummyCamera
