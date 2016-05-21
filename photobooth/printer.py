@@ -134,14 +134,17 @@ class ThermalPrinter(AbstractPrinter):
 
         # (2) add header text
         self.printer.justify('C')
-        self.printer.setSize('L')
-        self.println(self.conf['printer']['name'])
-        self.printer.setSize('s')
-        self.println(self.conf['printer']['url'])
+        if 'name' in self.conf['printer']:
+            self.printer.setSize('L')
+            self.println(self.conf['printer']['name'])
+            self.printer.setSize('s')
+        if 'url' in self.conf['printer']:
+            self.println(self.conf['printer']['url'])
+
         self.printer.justify('L')
         self.printer.feed(2)
 
-        # reset the printer, otherwise it spills out garbage
+        # reset the printer, otherwise it spills out garbage more often
         self.printer.sleep()
         self.printer.wake()
 
@@ -150,10 +153,6 @@ class ThermalPrinter(AbstractPrinter):
             for img in sess_imgs:
                 self.print_image(img)
 
-                # print session tags sequentally
-                #if len(sess_tags):
-                #    self.println(u'#'+sess_tags.pop())
-                #    self.printer.feed(1)
         else:
             # we're printing only the last image, because the printer heats too much and darkens the images
             self.print_image(sess_imgs[3])
