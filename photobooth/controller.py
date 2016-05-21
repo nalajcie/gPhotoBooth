@@ -41,6 +41,8 @@ class PhotoBoothController(object):
 
         # view and model
         self.is_running = False
+        self.live_view_running = False
+        self.live_view_still_img = None
         self.view = view.PygView(self, self.conf, self.camera)
         self.model = model.PhotoBoothModel(self)
         self.model.load_from_disk()
@@ -128,15 +130,27 @@ class PhotoBoothController(object):
         return False
 
     def start_live_view(self):
+        self.live_view_running = True
         self.camera.start_preview()
         self.view.lv.start()
 
     def resume_live_view(self):
         self.view.lv.start()
 
-    def stop_live_view(self):
+    def stop_live_view(self, still_img=None):
+        self.live_view_running = False
         self.camera.stop_preview()
         self.view.lv.stop()
+        if still_img:
+            self.view.lv.set_image(still_img)
+
+    def schedule_stop_live_view(self, still_img=None):
+        """ does not stop camera previews """
+        self.live_view_running = False
+        self.live_view_still_img = still_img
+
+    def is_live_view_overlay_finished(self):
+        return self.view.lv.is_started and not self.view.lv.is_overlay
 
     def live_view_show_arrow(self):
         self.view.lv.show_arrow = True
@@ -154,30 +168,38 @@ class PhotoBoothController(object):
             # (1) capture the image
             logger.info("capture_image_worker: capturing image to: %s", image_name)
             self.camera.pause_preview()
-            #self.view.lv.pause() # stop updating LV
-            self.camera.capture_image(image_name)
-            self.camera.start_preview() # resume previews ASAP
+            self.camera.capture_image(image_name) # this blocks
 
-            # (2) lights - default brightness
-            self.lights.set_brightness(self.conf["devices"]["lights_default"])
+            # (2) view: start the 'end animation overlay' and resume LV
+            if self.live_view_running:
+                self.camera.start_preview() # resume previews ASAP
+                self.view.lv.start()
+            else: # "pending" stop_live_view
+                self.stop_live_view(self.live_view_still_img)
 
-            # (3) load captured images and scale them
+            self.view.lv.end_overlay()
+
+            # (3) lights - default brightness (only during live view)
+            if self.live_view_running:
+                self.lights.set_brightness(self.conf["devices"]["lights_default"])
+            else:
+                self.lights.pause()
+
+            # (4) load captured images and scale them
             logger.debug("capture_image_worker: reading and scalling images")
             img = pygame.image.load(image_name).convert()
             img_lv = pygame.transform.scale(img, (view.LivePreview.WIDTH, view.LivePreview.HEIGHT))
             img_prev = pygame.transform.scale(img_lv, (view.SmallPhotoPreview.WIDTH, view.SmallPhotoPreview.HEIGHT))
 
-            # (4) view: start the 'end animation overlay' and resume LV
-            self.view.lv.start()
-            self.view.lv.end_overlay()
+            # (5) view: set the preview image
             self.view.main_previews[image_number].set_image(img_prev)
             self.view.main_previews[image_number].end_overlay()
 
-            # (5) save the scalled images
+            # (6) save the scalled images
             pygame.image.save(img_prev, prev_name)
             pygame.image.save(img_lv, medium_name)
 
-            # (6) finish the task and send the results
+            # (7) finish the task and send the results
             logger.debug("capture_image_worker: DONE")
             self.capture_names.task_done()
             self.model.set_current_session_imgs(image_number, (img, img_lv, img_prev))

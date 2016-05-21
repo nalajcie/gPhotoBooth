@@ -82,18 +82,26 @@ class TakePictureState(SessionState):
     def __init__(self, model):
         super(TakePictureState, self).__init__(model)
         image_name = self.take_picture()
+
+        # if this is the last image, do not fire up the live view after the shoot
+        if self.model.photo_count == 4:
+            self.model.controller.schedule_stop_live_view(self.model.images[1][1])
+
         logger.debug("TakePictureState: taking picutre: %s", image_name)
         self.model.controller.set_text(self.model.conf['m']['after_capture'][self.model.photo_count])
 
     def update(self, button_pressed):
-        if self.model.photo_count in self.model.images:
-            if self.model.photo_count == 4:
+        if self.model.photo_count == 4:
+            if self.model.photo_count in self.model.images: # wait for image to be taken before going futher
                 return ShowSessionMontageState(self.model)
             else:
-                self.model.controller.resume_live_view()
-                return CountdownState(self.model, self.model.conf['control']['midphoto_countdown_secs'])
+                return self
         else:
-            return self
+            if self.model.controller.is_live_view_overlay_finished():
+                # live view will be resumed ASAP by controller after taking the image
+                return CountdownState(self.model, self.model.conf['control']['midphoto_countdown_secs'])
+            else:
+                return self
 
     def take_picture(self):
         """ as the name says... """
@@ -109,7 +117,6 @@ class ShowSessionMontageState(TimedState):
         super(ShowSessionMontageState, self).__init__(model, model.conf['control']['montage_display_secs'])
 
         img_lv_list = [sizes[1] for sizes in self.model.images.itervalues()]
-        self.model.controller.stop_live_view()
         self.model.controller.enqueue_animate_montage(img_lv_list)
 
         self.text_arr = self.model.conf['m']['during_merge'].strip().split("\n")
