@@ -12,6 +12,7 @@ devices:
     # note: the lights logic is inverted 0: full open, everything above 150 will start to flicker
     lights_default: 100
     lights_full: 0
+    lights_external: true
 
 camera:
     driver: DummyCamera

@@ -109,29 +109,41 @@ class Lights(base.Peripherial):
     Also because of MOSFET used everything above value 150 will start to visibly flicker.
     """
 
-    LIGHTS_PIN = 13 # GPIO -> board pin 33
+    LIGHTS_PIN = 13 # GPIO 13 -> board pin 33
+    EXTERNAL_LIGHTS_PIN = 27 # GPIO -> board pin 13
 
     PWM_VAL_DEFAULT = 100
     PWM_VAL_MAX = 1024
 
-    def __init__(self):
+    def __init__(self, external_lights):
+        super(Lights, self).__init__()
+        self.external_lights = external_lights
         # hardware PWM led (and power off lights)
         wiringpi2.pinMode(self.LIGHTS_PIN, wiringpi2.GPIO.PWM_OUTPUT)
         wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_MAX)
+        if self.external_lights:
+            wiringpi2.pinMode(self.EXTERNAL_LIGHTS_PIN, wiringpi2.GPIO.OUTPUT)
+            wiringpi2.digitalWrite(self.EXTERNAL_LIGHTS_PIN, 1)
 
     def __del__(self):
         wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_MAX)
+        if self.external_lights:
+            wiringpi2.digitalWrite(self.EXTERNAL_LIGHTS_PIN, 1)
 
     def start(self):
         wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_DEFAULT)
+        if self.external_lights:
+            wiringpi2.digitalWrite(self.EXTERNAL_LIGHTS_PIN, 0)
 
-    def set_brightness(self, b):
-        if b > self.PWM_VAL_MAX:
-            b = self.PWM_VAL_MAX
+    def set_brightness(self, brightness):
+        if brightness > self.PWM_VAL_MAX:
+            brightness = self.PWM_VAL_MAX
 
-        wiringpi2.pwmWrite(self.LIGHTS_PIN, b)
+        wiringpi2.pwmWrite(self.LIGHTS_PIN, brightness)
 
     def pause(self):
         wiringpi2.pwmWrite(self.LIGHTS_PIN, self.PWM_VAL_MAX)
+        if self.external_lights:
+            wiringpi2.digitalWrite(self.EXTERNAL_LIGHTS_PIN, 1)
 
 

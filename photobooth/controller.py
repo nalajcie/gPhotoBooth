@@ -36,7 +36,7 @@ class PhotoBoothController(object):
 
         # peripherials
         self.button = platform.Button()
-        self.lights = platform.Lights()
+        self.lights = platform.Lights(self.conf['devices']['lights_external'])
         self.button.register_callback(self.button_callback)
 
         # view and model
