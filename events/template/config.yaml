@@ -41,12 +41,13 @@ printer:
 
             fw_version: 269
 
-    # controller-related vars
+# controller-related vars
 control:
     initial_countdown_secs:     3
     midphoto_countdown_secs:    3
     montage_display_secs:       9
     idle_secs:                  30
+    gif_delay_ms:               200
     montage_fps:                4
     idle_previews_cnt:          16
     message_file:               msg/english.yaml

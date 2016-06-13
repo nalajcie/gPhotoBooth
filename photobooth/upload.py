@@ -75,7 +75,8 @@ def run(conf, pipe):
             # (1) create GIF
             start = time.time()
             gif_name = get_gif_filename(medium_file_list[0])
-            cmd = ["convert", "-delay", "20", "-loop", "0"]
+            # GIF dealy is in 'ticks' (100 ticks = 1 s)
+            cmd = ["convert", "-delay", str(conf['control']['gif_delay_ms']/10), "-loop", "0"]
             cmd.extend(medium_file_list)
             cmd.append(gif_name)
             logger.debug("CMD: %s", cmd)
