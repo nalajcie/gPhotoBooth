@@ -74,6 +74,7 @@ layout:
 
 upload:
     enabled: True
+    retrying: True # retry uploading to tumblr after restart
     tumblr:
         blogname: YOUR_NAME
         consumer_key:       YOUR_KEY

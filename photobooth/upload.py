@@ -9,9 +9,13 @@ import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
 
 GIF_FILENAME = "animation.gif"
+STAMP_FILENAME = ".stamp_uploaded"
 
 def get_gif_filename(file_name):
     return os.path.join(os.path.dirname(file_name), GIF_FILENAME)
+
+def get_stamp_filename(file_name):
+    return os.path.join(os.path.dirname(file_name), STAMP_FILENAME)
 
 def get_sess_dirname(conf, sess_id):
     return os.path.join(conf['event_dir'], conf['m']['upload_session_dir'] % sess_id)
@@ -72,16 +76,17 @@ def run(conf, pipe):
         try:
             logger.info("processing sess(%d) files: %s", sess_id, full_file_list)
 
-            # (1) create GIF
+            # (1) create GIF (or do noting if it exists)
             start = time.time()
             gif_name = get_gif_filename(medium_file_list[0])
-            # GIF dealy is in 'ticks' (100 ticks = 1 s)
-            cmd = ["convert", "-delay", str(conf['control']['gif_delay_ms']/10), "-loop", "0"]
-            cmd.extend(medium_file_list)
-            cmd.append(gif_name)
-            logger.debug("CMD: %s", cmd)
-            subprocess.call(cmd)
-            logger.debug("creating GIF took %f seconds", (time.time() - start))
+            if not os.path.exists(gif_name):
+                # GIF dealy is in 'ticks' (100 ticks = 1 s)
+                cmd = ["convert", "-delay", str(conf['control']['gif_delay_ms']/10), "-loop", "0"]
+                cmd.extend(medium_file_list)
+                cmd.append(gif_name)
+                logger.debug("CMD: %s", cmd)
+                subprocess.call(cmd)
+                logger.debug("creating GIF took %f seconds", (time.time() - start))
 
             # (2) prepare dropbox folder for the session
             if db_client:
@@ -109,10 +114,15 @@ def run(conf, pipe):
             created_post = client.posts(conf['upload']['tumblr']['blogname'], id=post['id'])
             logger.debug("posts: %s", created_post)
             logger.debug("posts time: %f seconds", (time.time() - start))
-            logger.debug("short URL: %s", created_post['posts'][0]['short_url'])
-            client_pipe.send((sess_id, created_post['posts'][0]['short_url']))
+            short_url = created_post['posts'][0]['short_url']
+            logger.debug("short URL: %s", short_url)
+            client_pipe.send((sess_id, short_url))
 
-            # (5) reupload GIF + upload remaining files onto dropbox
+            # (5) write stamp file to ensure we've sent data to tumblr
+            with open(get_stamp_filename(gif_name), 'w') as stamp_file:
+                stamp_file.write(short_url)
+
+            # (6) reupload GIF + upload remaining files onto dropbox
             if db_client:
                 start = time.time()
                 imgs_to_upload = [gif_name]
@@ -124,7 +134,7 @@ def run(conf, pipe):
                     db_client.put_file(dest_file, up_file)
                 logger.debug("dropbox_upload time: %f seconds", (time.time() - start))
 
-            # reuploading all images to tumbler - not used!
+            # reuploading all images to tumblr - not used!
             #start = time.time()
             #imgs_to_upload = [gif_name]
             #imgs_to_upload.extend(file_list)

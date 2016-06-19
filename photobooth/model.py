@@ -5,6 +5,8 @@ import datetime
 import random
 import math
 
+from upload import get_stamp_filename
+
 import logging
 logger = logging.getLogger('photobooth.%s' % __name__)
 
@@ -206,7 +208,7 @@ class FinishedSessionModel(object):
         return [self.booth_model.get_image_name(self.id, photo_no, 'full') for photo_no in xrange(1, 5)]
 
     @classmethod
-    def from_dir(cls, booth_model, sess_id):
+    def from_dir(cls, booth_model, sess_id, conf):
         """ trying to create FinishedSession from directory """
         img_list = []
         for num in xrange(1, 5):
@@ -217,7 +219,7 @@ class FinishedSessionModel(object):
             except Exception:
                 raise ValueError # error while opening/reading file, incomplete photo session
 
-        return cls(booth_model, sess_id, img_list, None, None) # do not care about medium images
+        return cls(booth_model, sess_id, img_list, None, conf['random_tags']) # do not care about medium images
 
 
 class PhotoBoothModel(object):
@@ -235,6 +237,7 @@ class PhotoBoothModel(object):
     def load_from_disk(self):
         """ try to load FinishedSessions from the disk """
         all_sessions = []
+        to_upload_sessions = []
         for dirname in os.listdir(self.conf['event_dir']):
             #logger.debug("SCANNING: '%s'" % d)
             path = os.path.join(self.conf['event_dir'], dirname)
@@ -245,9 +248,12 @@ class PhotoBoothModel(object):
                     sess_id = None
                 if sess_id:
                     try:
-                        sess = FinishedSessionModel.from_dir(self, sess_id)
+                        sess = FinishedSessionModel.from_dir(self, sess_id, self.conf)
                         all_sessions.append(sess)
-                        logger.info("PHOTO_SESS : '%s' = %s", dirname, sess)
+                        is_uploaded = os.path.exists(get_stamp_filename(path + "/"))
+                        if not is_uploaded:
+                            to_upload_sessions.append(sess)
+                        logger.info("PHOTO_SESS : '%s' = %s (uploaded: %s)", dirname, sess, is_uploaded)
                     except ValueError:
                         #logger.debug("\t%d: incomplete session" % sess_id)
                         pass
@@ -255,8 +261,10 @@ class PhotoBoothModel(object):
                     self.next_photo_session = max(self.next_photo_session, sess_id + 1)
 
         all_sessions.sort(key=lambda x: x.id)
+        to_upload_sessions.sort(key=lambda x: x.id)
         self.finished_sessions = all_sessions
         self.update_finished()
+        return to_upload_sessions
 
     def update(self, button_pressed):
         """ updates current session """
@@ -319,7 +327,7 @@ class PhotoBoothModel(object):
     def update_finished(self):
         """ update idle previews with finished sessions """
         self.finished_sessions = self.finished_sessions[-self.conf['control']['idle_previews_cnt']:]
-        logger.info("FINISED SESSIONS CNT: %d", len(self.finished_sessions))
+        #logger.info("FINISED SESSIONS CNT: %d", len(self.finished_sessions))
         self.controller.notify_idle_previews_changed()
 
     #generator!

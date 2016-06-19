@@ -45,7 +45,7 @@ class PhotoBoothController(object):
         self.live_view_still_img = None
         self.view = view.PygView(self, self.conf, self.camera)
         self.model = model.PhotoBoothModel(self)
-        self.model.load_from_disk()
+        to_upload_sessions = self.model.load_from_disk()
 
         # capture thread
         self.capture_names = Queue(maxsize=0)
@@ -59,6 +59,12 @@ class PhotoBoothController(object):
             self.upload_pipe = pipe[0]
             self.process_upload = multiprocessing.Process(target=upload.run, args=(self.conf, pipe))
             self.process_upload.daemon = True
+
+            # try to reupload not yet uploaded sessions
+            if self.conf['upload']['retrying']:
+                for sess in to_upload_sessions:
+                    self.upload_pipe.send((sess.id, sess.get_medium_img_paths(),\
+                        sess.get_full_img_paths(), sess.random_tags))
 
 
         self.next_fps_update_ticks = 0
