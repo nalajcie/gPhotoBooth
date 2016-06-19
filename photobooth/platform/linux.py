@@ -17,6 +17,8 @@ class Lights(base.Peripherial):
     We're not supporting external lights on linux.
     Feel free to implement Your peripherials here.
     """
+    def __init__(self, external_lights):
+        super(Lights, self).__init__()
 
     def set_brightness(self, b):
         pass
