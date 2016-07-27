@@ -7,7 +7,8 @@ import argparse
 import logging
 import importlib
 
-from photobooth import controller, config
+from common import config
+from photobooth import controller
 
 
 
