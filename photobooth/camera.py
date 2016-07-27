@@ -169,10 +169,10 @@ class DummyCamera(object):
         Apply some simple transformation to differ the 4 captured images (GussianBlur in here
         """
         from PIL import Image, ImageFilter
-        import photobooth.platform as platform
+        import platform_devs
 
         # gaussian blur is really slow on Pi, hack to be able to use DummyCamera
-        if platform.get_platform() == platform.PI:
+        if platform_devs.get_platform() == platform_devs.PI:
             image = Image.open("dev/dummy-preview.jpg")
             gaussian_scaler = 5
         else:

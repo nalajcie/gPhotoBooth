@@ -3,7 +3,7 @@ import pygame
 import photobooth.model as model
 import photobooth.view as view
 import photobooth.upload as upload
-import photobooth.platform as platform
+import platform_devs
 from photobooth.printer import PrinterProxy
 from threading import Thread
 from Queue import Queue
@@ -27,16 +27,16 @@ class PhotoBoothController(object):
         self.printer = PrinterProxy(self.conf)
 
         # platform and pygame
-        logger.info("PLATFORM: %s" % platform.running_platform)
-        platform.platform_init()
+        logger.info("PLATFORM: %s" % platform_devs.running_platform)
+        platform_devs.platform_init()
         pygame.init()
         pygame.mouse.set_visible(False)
 
         self.clock = pygame.time.Clock()
 
         # peripherials
-        self.button = platform.Button()
-        self.lights = platform.Lights(self.conf['devices']['lights_external'])
+        self.button = platform_devs.Button()
+        self.lights = platform_devs.Lights(self.conf['devices']['lights_external'])
         self.button.register_callback(self.button_callback)
 
         # view and model
@@ -70,7 +70,7 @@ class PhotoBoothController(object):
         self.next_fps_update_ticks = 0
 
     def __del__(self):
-        platform.platform_deinit()
+        platform_devs.platform_deinit()
 
     def run(self):
         """Main loop"""
