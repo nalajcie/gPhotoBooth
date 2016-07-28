@@ -1,0 +1,56 @@
+picam:
+    #    binary: '/home/pi/src/picam/picam.stripped'
+    binary: '/home/pi/src/picam/picam'
+    workdir: '/home/pi/picam/'
+    shmdir: '/run/shm'
+    archive_dir: '/home/pi/picam/arch/'
+    params:
+        alsadev: 'hw:1,0'
+        #audiopreview: True
+        #audiopreviewdev: 'plughw:1,0'
+        samplerate: 48000
+        hflip: True
+        preview: True
+        blank: True
+        videobitrate: 12000000
+        verbose: True
+            
+# controller-related vars
+control:
+    initial_countdown_secs:     3
+    movie_length_secs:          15
+    movie_finish_secs:          3
+    message_file:               msg/polish.yaml
+
+
+devices:
+    # note: the lights logic is inverted 0: full open, everything above 150 will start to flicker
+    lights_default: 100
+    lights_full: 0
+    lights_external: true
+
+
+printer:
+    driver: NullPrinter
+    logo: assets/nalajcie-logo.png
+    name: Event Name
+    url: http://example.com/
+    end_text: ""
+    print_all_imgs: false       # if true, extend montage_display_secs to 12-15
+
+    # thermal printer specifications
+    thermal:
+        device_name: /dev/ttyAMA0
+        baudrate: 115200
+
+        kwargs:
+            timeout: 5
+            rtscts: 1
+
+            #heat_time: 200
+            heat_time: 160
+            heat_dots: 7
+            heat_interval: 25
+
+            fw_version: 269
+

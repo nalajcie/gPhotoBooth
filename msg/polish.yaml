@@ -19,4 +19,4 @@ print_session_no:       "Sesja nr: %d"
 upload_session_title:   "Sesja %d"
 upload_session_dir:     "sesja_%d"
 upload_download_photos: "Zdjęcia do pobrania"
-
+movie_finish_text:      "Koniec nagrywania"
