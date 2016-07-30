@@ -5,7 +5,7 @@
 import sys
 import argparse
 import logging
-import importlib
+import pprint
 
 from common import config
 from videobooth import controller
@@ -34,7 +34,7 @@ def parse_args():
     """ commandline args parsing and config reading """
     parser = argparse.ArgumentParser()
     parser.add_argument("event_dir", help="Event directory - place to read config and store images")
-    #TODO
+    #TODO: more options
     args = parser.parse_args()
 
     conf = config.read_config(args.event_dir)
@@ -47,7 +47,7 @@ def main():
     """ main function """
     logger = setup_logger()
     conf = parse_args()
-    logger.info("Full configuration: %s", conf)
+    logger.info("Full configuration: %s", pprint.pformat(conf))
     finished_normally = False
 
     try:
