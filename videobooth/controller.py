@@ -1,17 +1,15 @@
 # encoding: utf-8
 """ Controlls the logic flow around the whole application """
 import videobooth.model as model
+import videobooth.picam as picam
 import platform_devs
-from photobooth.printer import PrinterProxy
+#from photobooth.printer import PrinterProxy
 
 from threading import Thread
 from Queue import Queue
 
 import multiprocessing
-import subprocess
 import time
-import os
-import io
 
 
 import logging
@@ -22,12 +20,14 @@ class VideoBoothController(object):
 
     def __init__(self, config):
         self.conf = config
-        self.printer = PrinterProxy(self.conf)
+        self.cam = picam.PiCam(config)
+        self.cam.start()
+        #self.printer = PrinterProxy(self.conf)
 
-        # platform and pygame
+        # platform and picam
         logger.info("PLATFORM: %s" % platform_devs.running_platform)
         platform_devs.platform_init()
-        self.spawn_picam()
+        self.cam.start()
 
         # peripherials
         self.button = platform_devs.Button()
@@ -35,56 +35,11 @@ class VideoBoothController(object):
         self.lights = platform_devs.Lights(self.conf['devices']['lights_external'])
         self.button.register_callback(self.button_callback)
 
-        # view and model
+
+        # model at the end (may want to show something already
         self.is_running = False
         self.model = model.VideoBoothModel(self)
 
-        # picam shortcuts
-        self.hooks_dir = os.path.join(self.conf['picam']['workdir'], "hooks")
-        self.last_text = ""
-
-    def spawn_picam(self):
-        # setup dirs
-        if not os.path.exists(self.conf['picam']['workdir']):
-            os.makedirs(self.conf['picam']['workdir'])
-        if not os.path.exists(self.conf['picam']['archive_dir']):
-            os.makedirs(self.conf['picam']['archive_dir'])
-
-        for dirname in ["rec", "hooks", "state"]:
-            realdir = os.path.join(self.conf['picam']['shmdir'], dirname)
-            symname = os.path.join(self.conf['picam']['workdir'], dirname)
-            if not os.path.exists(realdir):
-                os.makedirs(realdir)
-
-            # always regenerate symlinks
-            if os.path.lexists(symname):
-                os.remove(symname)
-            os.symlink(realdir, symname)
-
-        archive_symname = os.path.join(self.conf['picam']['workdir'], "rec/archive")
-        if os.path.lexists(archive_symname):
-            os.remove(archive_symname)
-        os.symlink(self.conf['picam']['archive_dir'], archive_symname)
-
-        # prepare command line
-        args = [ self.conf['picam']['binary'] ]
-        for (k, v) in self.conf['picam']['params'].iteritems():
-            args.append("--" + k)
-            if v != True:
-                args.append(str(v))
-
-        # spawn!
-        logger.info("spawning PICAM: %s", args)
-        subprocess.Popen(args, cwd=self.conf['picam']['workdir'])
-
-    def kill_picam(self):
-        cmd = [ 'killall', self.conf['picam']['binary'] ]
-        logger.info("trying to kill PICAM: %s", cmd)
-        subprocess.Popen(cmd)
-
-    def __del__(self):
-        self.kill_picam()
-        platform_devs.platform_deinit()
 
     def run(self):
         """Main loop"""
@@ -103,6 +58,10 @@ class VideoBoothController(object):
 
         self.quit()
 
+    def __del__(self):
+        self.cam.stop()
+        platform_devs.platform_deinit()
+
     def quit(self):
         self.is_running = False
         if self.model:
@@ -110,7 +69,7 @@ class VideoBoothController(object):
             self.model = None
 
         self.lights.pause()
-        self.kill_picam()
+        self.cam.stop()
 
     def button_callback(self):
         self.button_pressed = True
@@ -120,46 +79,27 @@ class VideoBoothController(object):
         self.button_pressed = False
         return button_pressed
 
+    def get_external_ip(self):
+        return platform_devs.get_ip()
+
     def set_info_text(self, text_lines, big=False):
         if isinstance(text_lines, list):
             text = "\\n".join(text_lines)
         else:
             text = text_lines
         if big:
-            self.set_text(text, pt=140, layout_align="middle,middle")
+            self.cam.set_text(text, pt=140, layout_align="center,center")
         else:
-            self.set_text(text, pt=60)
+            self.cam.set_text(text, pt=60)
 
     def set_rec_text(self, time):
         text = "\\n".join([u"●REC", time])
-        self.set_text(text, layout_align="top,right", horizontal_margin=30, vertical_margin=30, color="ff0000")
+        self.cam.set_text(text, layout_align="top,right", horizontal_margin=30, vertical_margin=30, color="ff0000")
 
-
-    def set_text(self, text, **kwargs):
-        if self.last_text == text:
-            return
-        self.last_text = text
-        params = {
-                "text": text,
-                "in_video": 0,
-                "duration": 0,
-                "pt": 40,
-                }
-        for (k, v) in kwargs.iteritems():
-            params[k] = v
-        param_strings = [ u"=".join([unicode(k), unicode(v)]) for (k, v) in params.iteritems() ]
-        logger.debug("SUBTITLE: %s", param_strings)
-
-        dest_file = os.path.join(self.hooks_dir, "subtitle")
-        with io.open(dest_file, "w", encoding="utf-8") as f:
-            f.write(u"\n".join(param_strings))
 
     def start_recording(self):
-        dest_file = os.path.join(self.hooks_dir, "start_record")
-        with io.open(dest_file, "w") as f:
-            f.write(u"")
+        self.cam.start_recording()
 
     def stop_recording(self):
-        dest_file = os.path.join(self.hooks_dir, "stop_record")
-        with io.open(dest_file, "w") as f:
-            f.write(u"")
+        self.cam.stop_recording()
+
