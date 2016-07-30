@@ -147,3 +147,7 @@ class Lights(base.Peripherial):
             wiringpi2.digitalWrite(self.EXTERNAL_LIGHTS_PIN, 1)
 
 
+def get_ip():
+    """ use generic linux approach """
+    import linux
+    return linux.get_ip()
