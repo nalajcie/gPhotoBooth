@@ -48,6 +48,10 @@ class VideoBoothController(object):
         self.button.start()
 
         while self.is_running:
+            # if camera stopped working, exit
+            if not self.cam.update():
+                break
+
             button_pressed = self.process_events()
             # detecting LONG PRESS for poweroff:
             self.button.update_state()
