@@ -13,6 +13,7 @@ class SessionState(object):
     """ Base class for PhotoSession state """
     def __init__(self, model):
         self.model = model
+        self.controller = model.controller
 
     def update(self, button_pressed):
         """ state update & transitin method """
@@ -22,7 +23,7 @@ class WaitingState(SessionState):
     """ waiting for button push """
     def __init__(self, model):
         super(WaitingState, self).__init__(model)
-        self.model.controller.set_info_text(self.model.conf['m']['start_pushbutton'])
+        self.controller.set_info_text(self.model.conf['m']['start_pushbutton'])
 
     def update(self, button_pressed):
         if button_pressed:
@@ -56,14 +57,14 @@ class InitState(TimedState):
     def __init__(self, model):
         super(InitState, self).__init__(model, model.conf['control']['booth_init_secs'])
 
-        self.ext_ip = self.model.controller.get_external_ip()
+        self.ext_ip = self.controller.get_external_ip()
         self.ext_ip_shown = False
         logger.info("EXTERNAL IP = %s", self.ext_ip)
 
     def update(self, button_pressed):
         # show external IF 2 secs after startup to let everything settle down
         if not self.ext_ip_shown and self.running_secs() > 2:
-            self.model.controller.set_info_text("IP = " + self.ext_ip)
+            self.controller.set_info_text("IP = " + self.ext_ip)
             self.ext_ip_shown = True
 
         if self.time_up():
@@ -76,7 +77,7 @@ class CountdownState(TimedState):
     """ counting down to the movie recording start """
     def __init__(self, model):
         super(CountdownState, self).__init__(model, model.conf['control']['initial_countdown_secs'])
-        self.model.controller.lights.start()
+        self.controller.lights.start()
 
     def update(self, button_pressed):
         if self.time_up():
@@ -89,13 +90,14 @@ class CountdownState(TimedState):
         """ as the name says... """
         time_remaining = self.timer - time.time()
         text = u"%d" % int(time_remaining + 1)
-        self.model.controller.set_info_text(text, big=True)
+        self.controller.set_info_text(text, big=True)
 
 class RecordMovieState(TimedState):
     """ counting down to the first/next photo """
     def __init__(self, model):
         super(RecordMovieState, self).__init__(model, model.conf['control']['movie_length_secs'])
-        self.model.controller.start_recording()
+        self.controller.start_recording()
+
 
     def update(self, button_pressed):
         if self.time_up():
@@ -108,25 +110,24 @@ class RecordMovieState(TimedState):
         """ as the name says... """
         time_remaining = self.timer - time.time()
         text = u"0:%02d" % int(time_remaining + 1)
-        self.model.controller.set_rec_text(text)
+        self.controller.set_rec_text(text)
 
 class FinishMovieState(TimedState):
     """ waiting for button push """
     def __init__(self, model):
         super(FinishMovieState, self).__init__(model, model.conf['control']['movie_finish_secs'])
         # asynchronously stop recording
-        self.model.controller.stop_recording()
+        self.controller.stop_recording()
         self.recording_finished = False
         self.stop_rec_time = time.time()
 
-        self.model.controller.set_info_text(self.model.conf['m']['movie_finish_text'])
-        self.model.controller.lights.pause()
+        self.controller.set_info_text(self.model.conf['m']['movie_finish_text'])
+        self.controller.lights.pause()
 
     def update(self, button_pressed):
         if not self.recording_finished:
-            self.recording_finished = self.model.controller.check_recording_state()
-            # for DEBUG
-            if self.recording_finished:
+            self.recording_finished = self.controller.check_recording_state(self.create_post_url)
+            if self.recording_finished: # for DEBUG
                 logger.debug("stop_recording time: %f seconds", (time.time() - self.stop_rec_time))
 
         if self.time_up():
