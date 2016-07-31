@@ -13,8 +13,9 @@ picam:
         preview: True
         blank: True
         videobitrate: 12000000
-        verbose: True
-            
+        recordbuf: 2
+        #verbose: True
+
 # controller-related vars
 control:
     booth_init_secs:            6
