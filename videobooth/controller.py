@@ -2,13 +2,10 @@
 """ Controlls the logic flow around the whole application """
 import videobooth.model as model
 import videobooth.picam as picam
+from videobooth.upload import UploadProxy
 import platform_devs
 #from photobooth.printer import PrinterProxy
 
-from threading import Thread
-from Queue import Queue
-
-import multiprocessing
 import time
 
 
@@ -34,8 +31,10 @@ class VideoBoothController(object):
         self.lights = platform_devs.Lights(self.conf['devices']['lights_external'])
         self.button.register_callback(self.button_callback)
 
+        # uploader
+        self.upload = UploadProxy(self.conf)
 
-        # model at the end (may want to show something already
+        # model
         self.is_running = False
         self.model = model.VideoBoothModel(self)
 
@@ -45,6 +44,7 @@ class VideoBoothController(object):
 
         self.is_running = True
         self.button.start()
+        self.upload.start()
 
         while self.is_running:
             # if camera stopped working, exit
@@ -106,11 +106,11 @@ class VideoBoothController(object):
     def stop_recording(self):
         self.cam.stop_recording()
 
-    def check_recording_state(self):
+    def check_recording_state(self, post_url):
         if not self.cam.is_recording():
-            # TODO: start processing new movie
             new_movie_fn = self.cam.last_rec_filename()
             logger.info("NEW MOVIE: %s", new_movie_fn)
+            self.upload.async_process(post_url, new_movie_fn)
             return True
 
         return False

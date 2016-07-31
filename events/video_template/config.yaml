@@ -30,6 +30,15 @@ devices:
     lights_full: 0
     lights_external: true
 
+upload:
+    enabled: True
+    retrying: True # retry uploading after restart
+    atende:
+        api_endpoint:       YOUR_LINK
+        api_token:          YOUR_TOKEN
+        timeout_secs:       5
+        category_id:        1
+        description:        MOVIE_DESCRIPTON
 
 printer:
     driver: NullPrinter

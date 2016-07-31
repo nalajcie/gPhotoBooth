@@ -98,10 +98,16 @@ class RecordMovieState(TimedState):
         super(RecordMovieState, self).__init__(model, model.conf['control']['movie_length_secs'])
         self.controller.start_recording()
 
+        # create new post for uploading in the meantime
+        self.controller.upload.async_create_post()
+        self.create_post_url = None
 
     def update(self, button_pressed):
+        if self.create_post_url is None:
+            self.create_post_url = self.controller.upload.async_create_post_result()
+
         if self.time_up():
-            return FinishMovieState(self.model)
+            return FinishMovieState(self.model, self.create_post_url)
         else:
             self.display_countdown()
             return self
@@ -114,8 +120,10 @@ class RecordMovieState(TimedState):
 
 class FinishMovieState(TimedState):
     """ waiting for button push """
-    def __init__(self, model):
+    def __init__(self, model, post_url):
         super(FinishMovieState, self).__init__(model, model.conf['control']['movie_finish_secs'])
+        self.create_post_url = post_url
+
         # asynchronously stop recording
         self.controller.stop_recording()
         self.recording_finished = False
