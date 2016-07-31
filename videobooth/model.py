@@ -114,12 +114,25 @@ class FinishMovieState(TimedState):
     """ waiting for button push """
     def __init__(self, model):
         super(FinishMovieState, self).__init__(model, model.conf['control']['movie_finish_secs'])
+        # asynchronously stop recording
         self.model.controller.stop_recording()
+        self.recording_finished = False
+        self.stop_rec_time = time.time()
+
         self.model.controller.set_info_text(self.model.conf['m']['movie_finish_text'])
         self.model.controller.lights.pause()
 
     def update(self, button_pressed):
+        if not self.recording_finished:
+            self.recording_finished = self.model.controller.check_recording_state()
+            # for DEBUG
+            if self.recording_finished:
+                logger.debug("stop_recording time: %f seconds", (time.time() - self.stop_rec_time))
+
         if self.time_up():
+            if not self.recording_finished:
+                logger.warn("THE RECORDING HAS NOT BEEN FINISHED: what now?")
+                #TODO
             return WaitingState(self.model)
         return self
 

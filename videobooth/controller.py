@@ -106,3 +106,11 @@ class VideoBoothController(object):
     def stop_recording(self):
         self.cam.stop_recording()
 
+    def check_recording_state(self):
+        if not self.cam.is_recording():
+            # TODO: start processing new movie
+            new_movie_fn = self.cam.last_rec_filename()
+            logger.info("NEW MOVIE: %s", new_movie_fn)
+            return True
+
+        return False

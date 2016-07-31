@@ -13,9 +13,11 @@ class PiCam(object):
         self.conf = config
         self.proc = None
 
+        self.last_text = ""
+
         # shortcuts
         self.hooks_dir = os.path.join(self.conf['picam']['workdir'], "hooks")
-        self.last_text = ""
+        self.state_dir = os.path.join(self.conf['picam']['workdir'], "state")
 
 
     def start(self):
@@ -95,3 +97,18 @@ class PiCam(object):
         dest_file = os.path.join(self.hooks_dir, "stop_record")
         with io.open(dest_file, "w") as f:
             f.write(u"")
+
+    def is_recording(self):
+        dest_file = os.path.join(self.state_dir, "record")
+        with io.open(dest_file, "r") as f:
+            rec_bool = f.read()
+
+        return rec_bool.strip() == "true"
+
+
+    def last_rec_filename(self):
+        dest_file = os.path.join(self.state_dir, "last_rec")
+        with io.open(dest_file, "r") as f:
+            f_path = f.read()
+
+        return os.path.join(self.conf['picam']['archive_dir'], os.path.split(f_path)[1])
