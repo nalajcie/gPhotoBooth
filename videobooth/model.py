@@ -1,8 +1,6 @@
 # encoding: utf-8
-import os
 import time
 import datetime
-import random
 import math
 
 import logging
@@ -40,6 +38,9 @@ class TimedState(SessionState):
         self.timer = time.time() + timer_length_s
         self.duration = timer_length_s
 
+    def running_secs(self):
+        return self.duration - (self.timer - time.time())
+
     def time_up(self):
         """ helper to check for timeout """
         return self.timer <= time.time()
@@ -55,11 +56,16 @@ class InitState(TimedState):
     def __init__(self, model):
         super(InitState, self).__init__(model, model.conf['control']['booth_init_secs'])
 
-        ext_ip = self.model.controller.get_external_ip()
-        logger.info("EXTERNAL IP = %s", ext_ip)
-        self.model.controller.set_info_text("IP = " + ext_ip)
+        self.ext_ip = self.model.controller.get_external_ip()
+        self.ext_ip_shown = False
+        logger.info("EXTERNAL IP = %s", self.ext_ip)
 
     def update(self, button_pressed):
+        # show external IF 2 secs after startup to let everything settle down
+        if not self.ext_ip_shown and self.running_secs() > 2:
+            self.model.controller.set_info_text("IP = " + self.ext_ip)
+            self.ext_ip_shown = True
+
         if self.time_up():
             return WaitingState(self.model)
         else:

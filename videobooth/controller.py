@@ -21,7 +21,6 @@ class VideoBoothController(object):
     def __init__(self, config):
         self.conf = config
         self.cam = picam.PiCam(config)
-        self.cam.start()
         #self.printer = PrinterProxy(self.conf)
 
         # platform and picam
