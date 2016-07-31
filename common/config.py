@@ -10,6 +10,7 @@ import os
 
 
 DEFAULT_CONFIG_FILE = "events/template/config.yaml"
+DEFAULT_CONFIG_FILE_VIDEO = "events/video_template/config.yaml"
 CONFIG_FILENAME = "config.yaml"
 
 def read_yaml(yaml_path):
@@ -29,10 +30,10 @@ def merge(user, default):
                 user[k] = merge(user[k], v)
     return user
 
-def read_config(event_path):
+def read_config(event_path, default_config=DEFAULT_CONFIG_FILE):
     """ try to read config file """
     # (1) read default config
-    defaults = read_yaml(DEFAULT_CONFIG_FILE)
+    defaults = read_yaml(default_config)
 
     # (2) read event config
     yaml_path = os.path.join(event_path, CONFIG_FILENAME)

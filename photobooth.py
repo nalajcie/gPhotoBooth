@@ -6,6 +6,7 @@ import sys
 import argparse
 import logging
 import importlib
+import pprint
 
 from common import config
 from photobooth import controller
@@ -63,7 +64,7 @@ def main():
     """ main function """
     logger = setup_logger()
     conf = parse_args()
-    logger.info("Full configuration: %s", conf)
+    logger.info("Full configuration: %s", pprint.pformat(conf))
     finished_normally = False
 
     # setup CAMERA

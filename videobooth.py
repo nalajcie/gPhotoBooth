@@ -37,7 +37,7 @@ def parse_args():
     #TODO: more options
     args = parser.parse_args()
 
-    conf = config.read_config(args.event_dir)
+    conf = config.read_config(args.event_dir, default_config=config.DEFAULT_CONFIG_FILE_VIDEO)
 
     conf['event_dir'] = args.event_dir
     return conf
