@@ -18,8 +18,8 @@ logger = logging.getLogger('common.%s' % __name__)
 class PlaylistResource(resource.Resource):
     isLeaf = True
 
-    def __init__(self, dir, count, poster, url_prefix):
-        self.dir = dir
+    def __init__(self, _dir, count, poster, url_prefix):
+        self.dir = _dir
         self.count = count
         self.poster = poster
         self.url_prefix = url_prefix
