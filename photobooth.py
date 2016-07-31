@@ -66,6 +66,7 @@ def main():
     conf = parse_args()
     logger.info("Full configuration: %s", pprint.pformat(conf))
     finished_normally = False
+    booth = None # guard against exception in constructor
 
     # setup CAMERA
     # this is done here to be able to close the camera in case of any excepion
@@ -78,7 +79,6 @@ def main():
         sys.exit(-1)
 
     try:
-        booth = None # guard against exception in constructor
         booth = controller.PhotoBoothController(conf, cam)
         booth.run()
         finished_normally = True

@@ -7,7 +7,7 @@ display:
     idle_fps:       2
     working_fps:    30
 
-    # peripherials-related values
+# peripherials-related values
 devices:
     # note: the lights logic is inverted 0: full open, everything above 150 will start to flicker
     lights_default: 100

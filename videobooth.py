@@ -7,7 +7,7 @@ import argparse
 import logging
 import pprint
 
-from common import config
+from common import config, webserver
 from videobooth import controller
 
 
@@ -33,13 +33,14 @@ def setup_logger():
 def parse_args():
     """ commandline args parsing and config reading """
     parser = argparse.ArgumentParser()
-    parser.add_argument("event_dir", help="Event directory - place to read config and store images")
-    #TODO: more options
+    parser.add_argument("event_dir", help="Event directory - place to read config")
+    parser.add_argument("-w", "--webserver", help="Start webserver to serve videos locally", action="store_true")
     args = parser.parse_args()
 
     conf = config.read_config(args.event_dir, default_config=config.DEFAULT_CONFIG_FILE_VIDEO)
 
     conf['event_dir'] = args.event_dir
+    conf['webserver']['enabled'] |= args.webserver
     return conf
 
 
@@ -49,9 +50,10 @@ def main():
     conf = parse_args()
     logger.info("Full configuration: %s", pprint.pformat(conf))
     finished_normally = False
+    booth = None # guard against exception in constructor
 
     try:
-        booth = None # guard against exception in constructor
+        webserver.try_start_background(conf)
         booth = controller.VideoBoothController(conf)
         booth.run()
         finished_normally = True

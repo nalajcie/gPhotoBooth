@@ -31,6 +31,15 @@ devices:
     lights_full: 0
     lights_external: true
 
+
+# HTTP server for serving videos in local network
+webserver:
+    enabled:            true
+    port:               8000
+    poster_img:         'img/logo.png' # note: relative to 'web' directory
+    last_videos_count:  5
+
+
 upload:
     enabled: True
     retrying: True # retry uploading after restart

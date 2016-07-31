@@ -77,7 +77,7 @@ class UploadProxy(object):
                 import pprint
                 pprint.pprint(resp.__dict__)
                 self.create_resp.put(json.loads(resp.content)['uploadUri'])
-            except requests.exceptions.RequestException, exc:
+            except requests.exceptions.RequestException:
                 logger.exception("create: exception")
                 self.create_resp.put("")
 
@@ -100,6 +100,7 @@ class UploadProxy(object):
                 subprocess.call(cmd)
                 logger.debug("creating MP4 took %f seconds", (time.time() - start))
                 filepath = new_filepath
+                #TODO: remove .ts
 
 
             if not self.conf['upload']['enabled']:

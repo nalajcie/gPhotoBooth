@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Videobooth last movies...</title>
+    <link href="videojs/video-js.css" rel="stylesheet">
+    <link href="bootstrap.css" rel="stylesheet">
+    <link href="bootstrap-theme.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">WebSiteName</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="active"><a href="#">Home</a></li>
+          <li><a href="#">Page 1</a></li>
+          <li><a href="#">Page 2</a></li> 
+          <li><a href="#">Page 3</a></li> 
+        </ul>
+      </div>
+    </nav>
+    <div id="videocontent">
+      <video id="my-video" class="video-js vjs-16-9 vjs-default-skin" controls preload="auto" poster="/img/logo_tptv.png">
+        <p class="vjs-no-js">
+          To view this video please enable JavaScript, and consider upgrading to a web browser that
+          <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+        </p>
+      </video>
+    </div>
+
+    <script src="js/jquery-3.1.0.min.js"></script>
+    <script src="videojs/video.novtt.js"></script>
+    <script src="videojs/videojs-playlist.js"></script>
+    <script type="text/javascript">
+var player;
+
+$(document).ready(function() {
+  player = videojs('my-video', {
+      autoplay: true,
+      inactivityTimeout: 0,
+  });
+
+  refresh();
+});
+
+function refresh() {
+  //$.get("/playlist.json").done(function(data) {
+  $.get("/play.json").done(function(data) {
+    console.log("PLAYLIST");
+    console.log(data);
+    player.playlist(data);
+    player.playlist.autoadvance(0);
+  });
+}
+    </script>
+  </body>
+</html>

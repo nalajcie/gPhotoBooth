@@ -1,0 +1,16 @@
+html, body {
+    height: 100%;
+}
+
+
+div.video-js {
+    height:100% !important
+}
+
+div.video-js .vjs-tech {
+    height:100% !important
+}
+
+video {
+    width:auto !important;
+}
