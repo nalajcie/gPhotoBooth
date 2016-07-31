@@ -1,16 +1,16 @@
 html, body {
     height: 100%;
+    overflow: hidden;
+    background-color: #000;
+
 }
 
-
-div.video-js {
-    height:100% !important
+#videocontent {
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
 }
 
-div.video-js .vjs-tech {
-    height:100% !important
-}
-
-video {
-    width:auto !important;
+.navbar {
+    margin-bottom: 0;
 }

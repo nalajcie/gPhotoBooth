@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Videobooth last movies...</title>
+    <title>Videobooth last movies</title>
     <link href="videojs/video-js.css" rel="stylesheet">
     <link href="bootstrap.css" rel="stylesheet">
     <link href="bootstrap-theme.css" rel="stylesheet">
@@ -12,16 +12,15 @@
   </head>
 
   <body>
-    <nav class="navbar navbar-default">
+    <nav class="navbar navbar-inverse">
       <div class="container-fluid">
         <div class="navbar-header">
-          <a class="navbar-brand" href="#">WebSiteName</a>
+          <a class="navbar-brand" href="#">TriathlonPolandTV Videobooth</a>
         </div>
         <ul class="nav navbar-nav">
-          <li class="active"><a href="#">Home</a></li>
-          <li><a href="#">Page 1</a></li>
-          <li><a href="#">Page 2</a></li> 
-          <li><a href="#">Page 3</a></li> 
+          <li><a href="#" class="playlist-refresh">Refresh</a></li>
+          <li><a href="#" class="playlist-prev">Prev</a></li>
+          <li><a href="#" class="playlist-next">Next</a></li>
         </ul>
       </div>
     </nav>
@@ -38,22 +37,58 @@
     <script src="videojs/video.novtt.js"></script>
     <script src="videojs/videojs-playlist.js"></script>
     <script type="text/javascript">
+
 var player;
+var playlist_last_idx;
 
 $(document).ready(function() {
+  // setup correct div width for 16:9 movie
+  height = $('#videocontent').height();
+  offset = $('#videocontent').offset();
+  $('#videocontent').width((height - offset.top) * 16 / 9);
+
   player = videojs('my-video', {
       autoplay: true,
       inactivityTimeout: 0,
   });
 
+  // setup action buttons
+  $('.playlist-refresh').click(function() {
+    refresh();
+  });
+  $('.playlist-prev').click(function() {
+    player.playlist.prev();
+  });
+  $('.playlist-next').click(function() {
+    player.playlist.next();
+  });
+
+
+  // retrieve new playlist after playing last item form the current one
+  player.on('ended', function() {
+    curr_track = player.src();
+    curr_track_idx = player.playlist.indexOf(curr_track);
+
+    console.log("ENDED: [", curr_track_idx, "] ", curr_track);
+
+    if (curr_track_idx == playlist_last_idx) {
+      refresh();
+    }
+  });
+
+
+
+  // get first playlist
   refresh();
 });
 
 function refresh() {
-  //$.get("/playlist.json").done(function(data) {
+  console.log("pleylist: REFRESH");
+
   $.get("/play.json").done(function(data) {
-    console.log("PLAYLIST");
-    console.log(data);
+    console.log("playlist: RELOADED");
+    //console.log(data);
+    playlist_last_idx = data.length - 1;
     player.playlist(data);
     player.playlist.autoadvance(0);
   });
