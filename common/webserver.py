@@ -9,7 +9,6 @@ import operator
 
 from twisted.internet import reactor
 from twisted.web import static, server, resource
-from twisted.web.server import NOT_DONE_YET
 
 
 import logging
@@ -32,7 +31,7 @@ class PlaylistResource(resource.Resource):
 
     def read_new_files(self):
         has_changed = False
-        for root, dirs, files in os.walk(self.dir):
+        for root, _, files in os.walk(self.dir):
             for file in files:
                 if file not in self.cache.keys() and file.endswith(".mp4"):
                     self.cache[file] = os.path.getctime(os.path.join(root, file))
@@ -44,7 +43,7 @@ class PlaylistResource(resource.Resource):
         if self.read_new_files():
             sorted_by_time = sorted(self.cache.items(), key=operator.itemgetter(1), reverse=True)
             self.cached_response = []
-            for (file, t) in sorted_by_time[:self.count]:
+            for file, _ in sorted_by_time[:self.count]:
                 self.cached_response.append({
                     'sources': [{ 'src': self.url_prefix + '/mov/' + file, 'type':'video/mp4' }],
                     'poster': self.poster,
@@ -89,7 +88,7 @@ def try_start_background(conf):
 
 
 
-if __name__ == "__main__":
+def main():
     """ for testing: read config from file and start webserver """
     import config
     import sys
@@ -101,3 +100,6 @@ if __name__ == "__main__":
     ext_ip = sys.argv[2]
 
     serve(conf, ext_ip)
+
+if __name__ == "__main__":
+    main()

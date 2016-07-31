@@ -1,7 +1,5 @@
 # encoding: utf-8
 import time
-import datetime
-import math
 
 import logging
 logger = logging.getLogger('videobooth.%s' % __name__)
@@ -27,7 +25,6 @@ class WaitingState(SessionState):
 
     def update(self, button_pressed):
         if button_pressed:
-            self.model.capture_start = datetime.datetime.now()
             return CountdownState(self.model)
         return self
 
