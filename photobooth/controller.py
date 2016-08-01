@@ -4,7 +4,7 @@ import photobooth.model as model
 import photobooth.view as view
 import photobooth.upload as upload
 import platform_devs
-from photobooth.printer import PrinterProxy
+from common.printer import PrinterProxy
 from threading import Thread
 from Queue import Queue
 import multiprocessing

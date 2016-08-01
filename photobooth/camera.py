@@ -1,5 +1,5 @@
 # encoding: utf-8
-from local_modules import piggyphoto
+from local_modules.piggyphoto import piggyphoto
 from StringIO import StringIO
 from threading import Thread, Lock, Condition
 import thread # for interrupt_main

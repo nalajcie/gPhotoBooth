@@ -1,4 +1,4 @@
-from local_modules import Adafruit_Thermal
+from local_modules.thermal_printer import Adafruit_Thermal
 from PIL import Image
 import multiprocessing
 import time
