@@ -75,9 +75,8 @@ def serve(conf):
 def try_start_background(conf):
     """ start webserver in separate process """
     if conf['webserver']['enabled']:
-        import platform_devs
         logger.info("starting webserver")
-        srv_process = multiprocessing.Process(target=serve, args=(conf))
+        srv_process = multiprocessing.Process(target=serve, args=(conf,))
         # start and forget
         srv_process.daemon = True
         srv_process.start()
