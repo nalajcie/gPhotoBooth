@@ -106,11 +106,17 @@ class VideoBoothController(object):
     def stop_recording(self):
         self.cam.stop_recording()
 
-    def check_recording_state(self, post_url):
+    def check_recording_state(self, post_res):
         if not self.cam.is_recording():
             new_movie_fn = self.cam.last_rec_filename()
             logger.info("NEW MOVIE: %s", new_movie_fn)
-            self.upload.async_process(post_url, new_movie_fn)
+
+            (upload_url, frontend_url) = post_res or ("", "")
+            self.upload.async_process(upload_url, new_movie_fn)
+
+            if len(frontend_url) > 0:
+                # TODO: start printing frontend_url
+                logger.info("frontend URL: %s", frontend_url)
             return True
 
         return False

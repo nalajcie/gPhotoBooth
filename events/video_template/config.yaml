@@ -43,10 +43,12 @@ webserver:
 upload:
     enabled: True
     retrying: True # retry uploading after restart
+    debug: False
     atende:
         api_endpoint:       YOUR_LINK
         api_token:          YOUR_TOKEN
         timeout_secs:       5
+        title_prefix:       "Videobooth: "
         category_id:        1
         description:        MOVIE_DESCRIPTON
 
