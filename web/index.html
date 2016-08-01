@@ -15,12 +15,13 @@
     <nav class="navbar navbar-inverse">
       <div class="container-fluid">
         <div class="navbar-header">
-          <a class="navbar-brand" href="#">TriathlonPolandTV Videobooth</a>
+          <a class="navbar-brand" href="/"><img src="/img/logo.png" height="50" style="margin-top:-17px"/></a>
         </div>
-        <ul class="nav navbar-nav">
-          <li><a href="#" class="playlist-refresh">Refresh</a></li>
-          <li><a href="#" class="playlist-prev">Prev</a></li>
-          <li><a href="#" class="playlist-next">Next</a></li>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a id="playlist-num"></a></li>
+          <li><a href="#" class="playlist-refresh"><span class="glyphicon glyphicon-refresh"></span></a></li>
+          <li><a href="#" class="playlist-prev"><span class="glyphicon glyphicon-fast-backward"></span></a></li>
+          <li><a href="#" class="playlist-next"><span class="glyphicon glyphicon-fast-forward"></span></a></li>
         </ul>
       </div>
     </nav>
@@ -38,14 +39,18 @@
     <script src="videojs/videojs-playlist.js"></script>
     <script type="text/javascript">
 
+// ensure we're always on the main site
+if (!document.location.href.endsWith("/")) {
+  document.location.href = "/";
+}
+
+
 var player;
 var playlist_last_idx;
 
 $(document).ready(function() {
-  // setup correct div width for 16:9 movie
-  height = $('#videocontent').height();
-  offset = $('#videocontent').offset();
-  $('#videocontent').width((height - offset.top) * 16 / 9);
+  setup_width();
+  $(window).resize(setup_width);
 
   player = videojs('my-video', {
       autoplay: true,
@@ -55,12 +60,19 @@ $(document).ready(function() {
   // setup action buttons
   $('.playlist-refresh').click(function() {
     refresh();
+    return false;
   });
   $('.playlist-prev').click(function() {
-    player.playlist.prev();
+    if (player.playlist.previous()) {
+      update_playlist_counter(-1);
+    }
+    return false;
   });
   $('.playlist-next').click(function() {
-    player.playlist.next();
+    if (player.playlist.next()) {
+      update_playlist_counter(1);
+    }
+    return false;
   });
 
 
@@ -69,7 +81,8 @@ $(document).ready(function() {
     curr_track = player.src();
     curr_track_idx = player.playlist.indexOf(curr_track);
 
-    console.log("ENDED: [", curr_track_idx, "] ", curr_track);
+    //console.log("ENDED: [", curr_track_idx, "] ", curr_track);
+    update_playlist_counter(1);
 
     if (curr_track_idx == playlist_last_idx) {
       refresh();
@@ -82,6 +95,19 @@ $(document).ready(function() {
   refresh();
 });
 
+function setup_width() {
+  console.log("setup_width");
+  // setup correct div width for 16:9 movie
+  height = $('#videocontent').height();
+  offset = $('#videocontent').offset();
+  $('#videocontent').width((height - offset.top) * 16 / 9);
+}
+
+function update_playlist_counter(direction) {
+  var text = (player.playlist.currentItem() + 1 + direction) + '/' + (playlist_last_idx + 1)
+  $('#playlist-num').text(text);
+}
+
 function refresh() {
   console.log("pleylist: REFRESH");
 
@@ -89,6 +115,7 @@ function refresh() {
     console.log("playlist: RELOADED");
     //console.log(data);
     playlist_last_idx = data.length - 1;
+    $('#playlist-num').text('1/' + data.length);
     player.playlist(data);
     player.playlist.autoadvance(0);
   });
