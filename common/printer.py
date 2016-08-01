@@ -1,17 +1,19 @@
 from local_modules.thermal_printer import Adafruit_Thermal
-from PIL import Image
+from PIL import Image, ImageOps
+import qrcode
 import multiprocessing
 import time
 import pygame
 import sys
 
 import logging
-logger = logging.getLogger('photobooth.%s' % __name__)
+logger = logging.getLogger('common.%s' % __name__)
 
 class PrinterProxy(object):
     """ setups printer thread and communications with it """
-    REQ_SINGLE_IMG = 1
-    REQ_FULL_SESS = 2
+    REQ_SINGLE_IMG  = 1
+    REQ_FULL_SESS   = 2
+    REQ_VIDEO       = 3
 
     def __init__(self, config):
         self.conf = config
@@ -37,13 +39,21 @@ class PrinterProxy(object):
         img_objs = [(img.get_size(), pygame.image.tostring(img, "RGB")) for img in sess_imgs]
         self.printer_pipe.send((PrinterProxy.REQ_FULL_SESS, (sess_id, img_objs, sess_tags)))
 
+    def print_video(self, url):
+        """ pretty-print video session URL as QR-code """
+        self.printer_pipe.send((PrinterProxy.REQ_VIDEO, url))
+
     def __del__(self):
         self.printer_pipe.close()
 
 
 class AbstractPrinter(object):
+    MAX_WIDTH = 384
+    MAX_HEIGHT = 4096
+
     def __init__(self, config):
         self.conf = config
+        logger.info("%s: init", type(self).__name__)
 
     def run(self, pipe):
         """ run in separate process, dispatcher - do not override in subclass """
@@ -66,11 +76,36 @@ class AbstractPrinter(object):
                 elif req_id == PrinterProxy.REQ_FULL_SESS:
                     sess_id, sess_imgs, sess_tags = req_data
                     self.print_session(sess_id, sess_imgs, sess_tags)
+                elif req_id == PrinterProxy.REQ_VIDEO:
+                    qrcode_img = self.get_qrcode(req_data)
+                    self.print_video(req_data, qrcode_img)
                 else:
                     logger.error("unknown printer request: %d", req_id)
                 logger.info("printer request finished: %d, time: %f seconds", req_id, (time.time() - start))
             except Exception:
                 logger.exception("Printer worker exception!")
+
+    def get_qrcode(self, data):
+        """ common function to retrieve PIL image with encoded data """
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=6,
+            border=0,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+
+        img = qr.make_image()
+        img = img.convert('1')
+
+        # check if we need to shrink
+        if img.size[0] > self.MAX_WIDTH:
+            img = img.resize((self.MAX_WIDTH, self.MAX_WIDTH))
+
+        # check if we need to expand
+        img = ImageOps.expand(img, border=(self.MAX_WIDTH - img.size[0]) / 2, fill=255)
+        return img
 
     def print_image(self, img_pygame):
         """ debug: printing single image """
@@ -78,6 +113,10 @@ class AbstractPrinter(object):
 
     def print_session(self, sess_id, sess_imgs, sess_tags):
         """ pretty-print the whole photosession """
+        raise NotImplementedError
+
+    def print_video(self, url, qrcode_img):
+        """ pretty-print video session URL as QR-code """
         raise NotImplementedError
 
 
@@ -119,8 +158,9 @@ class ThermalPrinter(AbstractPrinter):
         self.printer.feed(3)
 
     def println(self, arg):
-        """ encode and print  arg as iso8859-2 string, as this is the codepage enabled on the printer """
-        self.printer.println(arg.encode('iso8859-2'))
+        """ encode and print arg as iso8859-2 string, as this is the codepage enabled on the printer """
+        for line in arg.strip().split('\n'):
+            self.printer.println(line.encode('iso8859-2'))
 
 
     def print_session(self, sess_id, sess_imgs, sess_tags):
@@ -138,7 +178,7 @@ class ThermalPrinter(AbstractPrinter):
             self.printer.setSize('L')
             self.println(self.conf['printer']['name'])
             self.printer.setSize('s')
-        if 'url' in self.conf['printer']:
+        if 'url' in self.conf['printer'] and len(self.conf['printer']['url']) > 0:
             self.println(self.conf['printer']['url'])
 
         self.printer.justify('L')
@@ -178,6 +218,55 @@ class ThermalPrinter(AbstractPrinter):
         self.printer.feed(3)
         self.printer.sleep()
 
+    def print_video(self, url, qrcode_img):
+        """ pretty-print video session URL as QR-code """
+        logger.info("ThermalPrinter: printing video")
+        # (0) wake the printer
+        self.printer.wake()
+
+        # (1) print logo as RAW IMAGE
+        self.printer.printImage(self.logo, False)
+        #self.printer.feed(1)
+
+        # (2) add header text
+        self.printer.justify('C')
+        if 'name' in self.conf['printer']:
+            self.printer.setSize('L')
+            self.println(self.conf['printer']['name'])
+            self.printer.setSize('s')
+        if 'url' in self.conf['printer'] and len(self.conf['printer']['url']) > 0:
+            self.println(self.conf['printer']['url'])
+
+        if 'start_text' in self.conf['printer'] and len(self.conf['printer']['start_text']) > 0:
+            #self.printer.feed(1)
+            self.println(self.conf['printer']['start_text'])
+
+        #self.printer.justify('L')
+        #self.printer.feed(2)
+
+
+        # reset the printer, otherwise it spills out garbage more often
+        self.printer.sleep()
+        self.printer.wake()
+
+        # (3) print prepared qrcode image
+        self.printer.printImage(qrcode_img, False)
+
+        # (4) add some final text
+        self.println(time.strftime("%Y-%m-%d %H:%M:%S"))
+
+        # (5) add 'end_text' if provided
+        if 'end_text' in self.conf['printer'] and len(self.conf['printer']['end_text']) > 0:
+            self.printer.feed(1)
+            self.printer.justify('C')
+            self.println(self.conf['printer']['end_text'])
+            self.printer.justify('L')
+
+        # (6) feed out and put printer back to sleep
+        self.printer.feed(3)
+        self.printer.sleep()
+
+
 class NullPrinter(AbstractPrinter):
     """ dummy no-op printer """
     MAX_WIDTH = 384
@@ -212,6 +301,11 @@ class NullPrinter(AbstractPrinter):
 
     def print_session(self, sess_id, sess_imgs, sess_tags):
         """ pretty-print the whole photosession """
+        #no-op
+        pass
+
+    def print_video(self, url, qrcode_img):
+        """ pretty-print video session URL as QR-code """
         #no-op
         pass
 

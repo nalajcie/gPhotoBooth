@@ -92,7 +92,9 @@ class UploadProxy(object):
                 import pprint
                 pprint.pprint(resp.__dict__)
                 resp_json = json.loads(resp.content)
-                self.create_resp.put((resp_json['uploadUri'], resp_json['frontendUri']))
+                self.create_resp.put((
+                    resp_json['uploadUri'],
+                    self.conf['upload']['atende']['api_endpoint'] + resp_json['frontendUri']))
             except requests.exceptions.RequestException:
                 logger.exception("create: exception")
                 self.create_resp.put(("",""))

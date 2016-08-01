@@ -1,10 +1,10 @@
 # encoding: utf-8
 """ Controlls the logic flow around the whole application """
+import platform_devs
 import videobooth.model as model
 import videobooth.picam as picam
 from videobooth.upload import UploadProxy
-import platform_devs
-#from photobooth.printer import PrinterProxy
+from common.printer import PrinterProxy
 
 import time
 
@@ -18,7 +18,7 @@ class VideoBoothController(object):
     def __init__(self, config):
         self.conf = config
         self.cam = picam.PiCam(config)
-        #self.printer = PrinterProxy(self.conf)
+        self.printer = PrinterProxy(self.conf)
 
         # platform and picam
         logger.info("PLATFORM: %s" % platform_devs.running_platform)
@@ -115,8 +115,8 @@ class VideoBoothController(object):
             self.upload.async_process(upload_url, new_movie_fn)
 
             if len(frontend_url) > 0:
-                # TODO: start printing frontend_url
                 logger.info("frontend URL: %s", frontend_url)
+                self.printer.print_video(frontend_url)
             return True
 
         return False

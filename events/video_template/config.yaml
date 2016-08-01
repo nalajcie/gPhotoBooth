@@ -57,6 +57,9 @@ printer:
     logo: assets/nalajcie-logo.png
     name: Event Name
     url: http://example.com/
+    start_text: |
+        Scan QR code to see
+        the recorded movie
     end_text: ""
     print_all_imgs: false       # if true, extend montage_display_secs to 12-15
 
