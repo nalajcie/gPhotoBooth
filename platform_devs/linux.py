@@ -40,4 +40,4 @@ def get_ip():
             ) if l ] # get first working method
         return x[0][0] #flatten
     except socket.error:
-        return "UNKNOWN"
+        return ""

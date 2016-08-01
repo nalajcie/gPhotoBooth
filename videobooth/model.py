@@ -54,9 +54,8 @@ class InitState(TimedState):
     def __init__(self, model):
         super(InitState, self).__init__(model, model.conf['control']['booth_init_secs'])
 
-        self.ext_ip = self.controller.get_external_ip()
+        self.ext_ip = self.controller.get_external_ip() or "UNKNOWN"
         self.ext_ip_shown = False
-        logger.info("EXTERNAL IP = %s", self.ext_ip)
 
     def update(self, button_pressed):
         # show external IF 2 secs after startup to let everything settle down

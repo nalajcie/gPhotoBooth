@@ -6,9 +6,11 @@ import sys
 import argparse
 import logging
 import pprint
+import time
 
 from common import config, webserver
 from videobooth import controller
+from platform_devs import get_ip
 
 
 
@@ -29,6 +31,8 @@ def setup_logger():
     logger.setLevel(logging.DEBUG)
     return logger
 
+logger = setup_logger()
+
 
 def parse_args():
     """ commandline args parsing and config reading """
@@ -43,14 +47,25 @@ def parse_args():
     conf['webserver']['enabled'] |= args.webserver
     return conf
 
+def wait_for_ip():
+    """ waits indefinately for external IP """
+    ext_ip = get_ip()
+    while len(ext_ip) == 0:
+        logger.info("waiting for external IP")
+        time.sleep(1)
+        ext_ip = get_ip()
+
+    logger.info("EXT IP: %s", ext_ip)
+
 
 def main():
     """ main function """
-    logger = setup_logger()
     conf = parse_args()
     logger.info("Full configuration: %s", pprint.pformat(conf))
     finished_normally = False
     booth = None # guard against exception in constructor
+
+    wait_for_ip()
 
     try:
         webserver.try_start_background(conf)
