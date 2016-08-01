@@ -14,9 +14,9 @@ from platform_devs import get_ip
 
 
 
-def setup_logger():
+def setup_global_logger():
     """ setup global logger """
-    logger = logging.getLogger('videobooth')
+    logger = logging.getLogger()
 
     file_log_handler = logging.FileHandler('videobooth.log')
     formatter = logging.Formatter('%(asctime)s [%(module)s] %(levelname)s %(message)s')
@@ -29,9 +29,9 @@ def setup_logger():
     logger.addHandler(stdout_log_handler)
 
     logger.setLevel(logging.DEBUG)
-    return logger
 
-logger = setup_logger()
+setup_global_logger()
+logger = logging.getLogger('videobooth')
 
 
 def parse_args():
