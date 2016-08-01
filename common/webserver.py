@@ -33,7 +33,7 @@ class PlaylistResource(resource.Resource):
         for root, _, files in os.walk(self.dir):
             for file in files:
                 if file not in self.cache.keys() and file.endswith(".mp4"):
-                    self.cache[file] = os.path.getctime(os.path.join(root, file))
+                    self.cache[file] = os.path.getmtime(os.path.join(root, file))
                     has_changed = True
 
         return has_changed
