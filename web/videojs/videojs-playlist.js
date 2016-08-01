@@ -199,11 +199,20 @@ var sourceEquals = function sourceEquals(source1, source2) {
     src2 = source2.src;
   }
 
+
   if (/^\/\//.test(src1)) {
     src2 = src2.slice(src2.indexOf('//'));
   }
   if (/^\/\//.test(src2)) {
     src1 = src1.slice(src1.indexOf('//'));
+  }
+
+  // allow entries without baseURI in playlist
+  if (/^\//.test(src1)) {
+    src2 = src2.replace(document.baseURI, '/');
+  }
+  if (/^\//.test(src2)) {
+    src1 = src1.replace(document.baseURI, '/');
   }
 
   return src1 === src2;

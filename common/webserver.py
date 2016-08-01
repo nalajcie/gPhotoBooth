@@ -18,11 +18,10 @@ logger = logging.getLogger('common.%s' % __name__)
 class PlaylistResource(resource.Resource):
     isLeaf = True
 
-    def __init__(self, _dir, count, poster, url_prefix):
+    def __init__(self, _dir, count, poster):
         self.dir = _dir
         self.count = count
         self.poster = poster
-        self.url_prefix = url_prefix
 
         self.cache = {}
         self.cached_response = None
@@ -45,7 +44,7 @@ class PlaylistResource(resource.Resource):
             self.cached_response = []
             for file, _ in sorted_by_time[:self.count]:
                 self.cached_response.append({
-                    'sources': [{ 'src': self.url_prefix + '/mov/' + file, 'type':'video/mp4' }],
+                    'sources': [{ 'src': '/mov/' + file, 'type':'video/mp4' }],
                     'poster': self.poster,
                 })
 
@@ -56,19 +55,17 @@ class PlaylistResource(resource.Resource):
         return json.dumps(self.cached_response, ensure_ascii=False, encoding='utf-8').encode('utf-8')
 
 
-def serve(conf, ext_ip):
+def serve(conf):
     """ main server function - never returns """
 
     port = conf['webserver']['port']
-    url_prefix = "http://%s:%d" % (ext_ip, port)
 
     root = static.File("web")
     root.putChild("mov", static.File(conf['picam']['archive_dir']))
 
     playlistRes = PlaylistResource(conf['picam']['archive_dir'],
             conf['webserver']['last_videos_count'],
-            conf['webserver']['poster_img'],
-            url_prefix)
+            conf['webserver']['poster_img'])
     root.putChild("play.json", playlistRes)
 
 
@@ -79,9 +76,8 @@ def try_start_background(conf):
     """ start webserver in separate process """
     if conf['webserver']['enabled']:
         import platform_devs
-        ext_ip = platform_devs.get_ip()
         logger.info("starting webserver")
-        srv_process = multiprocessing.Process(target=serve, args=(conf,ext_ip))
+        srv_process = multiprocessing.Process(target=serve, args=(conf))
         # start and forget
         srv_process.daemon = True
         srv_process.start()
@@ -92,14 +88,13 @@ def main():
     """ for testing: read config from file and start webserver """
     import config
     import sys
-    if len(sys.argv) < 3:
-        print("USAGE:\n\t%s <event_dir> <ext_ip>" % sys.argv[0])
+    if len(sys.argv) < 2:
+        print("USAGE:\n\t%s <event_dir>" % sys.argv[0])
         sys.exit(1)
 
     conf = config.read_config(sys.argv[1], default_config=config.DEFAULT_CONFIG_FILE_VIDEO)
-    ext_ip = sys.argv[2]
 
-    serve(conf, ext_ip)
+    serve(conf)
 
 if __name__ == "__main__":
     main()
