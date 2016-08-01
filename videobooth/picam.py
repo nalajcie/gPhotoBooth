@@ -47,7 +47,7 @@ class PiCam(object):
         args = [ self.conf['picam']['binary'] ]
         for (k, v) in self.conf['picam']['params'].iteritems():
             args.append("--" + k)
-            if v != True:
+            if v is not True:
                 args.append(str(v))
 
         # spawn!
