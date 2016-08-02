@@ -47,13 +47,15 @@ def parse_args():
     conf['webserver']['enabled'] |= args.webserver
     return conf
 
-def wait_for_ip():
+def wait_for_ip(max_retries):
     """ waits indefinately for external IP """
-    ext_ip = get_ip()
-    while len(ext_ip) == 0:
-        logger.info("waiting for external IP")
-        time.sleep(1)
+    for retry in xrange(1, max_retries):
         ext_ip = get_ip()
+        if len(ext_ip) > 0:
+            break
+
+        logger.info("(%d/%d) waiting for external IP", retry, max_retries)
+        time.sleep(1)
 
     logger.info("EXT IP: %s", ext_ip)
 
@@ -65,7 +67,7 @@ def main():
     finished_normally = False
     booth = None # guard against exception in constructor
 
-    wait_for_ip()
+    wait_for_ip(conf['control']['get_ip_retries_cnt'])
 
     try:
         webserver.try_start_background(conf)

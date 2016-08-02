@@ -16,6 +16,7 @@ picam:
 
 # controller-related vars
 control:
+    get_ip_retries_cnt:         10 # getting IP at startup
     booth_init_secs:            6
     initial_countdown_secs:     3
     movie_length_secs:          15
