@@ -6,10 +6,8 @@ picam:
     archive_dir: '/home/pi/picam/arch/'
     params:
         alsadev: 'hw:1,0'
-        #audiopreview: True
-        #audiopreviewdev: 'plughw:1,0'
         samplerate: 48000
-        hflip: True
+        hflip-preview: True
         preview: True
         blank: True
         videobitrate: 12000000
