@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import json
 import operator
+import subprocess
 
 
 
@@ -55,6 +56,26 @@ class PlaylistResource(resource.Resource):
         return json.dumps(self.cached_response, ensure_ascii=False, encoding='utf-8').encode('utf-8')
 
 
+class SystemControlResource(resource.Resource):
+    isLeaf = True
+
+    def render_GET(self, request):
+        #import pprint
+        #logging.debug("%s" % pprint.pformat(request.__dict__))
+        if len(request.postpath) == 0:
+            return "ERROR - no req"
+
+        req = request.postpath[0]
+        if req == "reboot":
+            logging.error("REBOOTING!")
+            subprocess.call(["sudo", "reboot"])
+        elif req == "poweroff":
+            logging.error("POWERING OFF!")
+            subprocess.call(["sudo", "poweroff"])
+        else:
+            return "ERROR - unknown req '%s'" % req
+
+
 def serve(conf):
     """ main server function - never returns """
 
@@ -67,6 +88,7 @@ def serve(conf):
             conf['webserver']['last_videos_count'],
             conf['webserver']['poster_img'])
     root.putChild("play.json", playlistRes)
+    root.putChild("system", SystemControlResource())
 
 
     reactor.listenTCP(port, server.Site(root))

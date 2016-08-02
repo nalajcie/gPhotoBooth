@@ -17,6 +17,10 @@
         <div class="navbar-header">
           <a class="navbar-brand" href="/"><img src="/img/logo.png" height="50" style="margin-top:-17px"/></a>
         </div>
+        <ul class="nav navbar-nav navbar-right" style="margin-left:50px">
+          <li><a href="/system/poweroff" class="system-action"><span class="glyphicon glyphicon-off"></span></a></li>
+          <li><a href="/system/reboot" class="system-action"><span class="glyphicon glyphicon-retweet"></span></a></li>
+        </ul>
         <ul class="nav navbar-nav navbar-right">
           <li><a id="playlist-num"></a></li>
           <li><a href="#" class="playlist-refresh"><span class="glyphicon glyphicon-refresh"></span></a></li>
@@ -75,6 +79,12 @@ $(document).ready(function() {
     return false;
   });
 
+  $('.system-action').click(function() {
+    $.get(this.href).done(function() {
+      alert("Videobooth is stopping");
+    });
+    return false;
+  });
 
   // retrieve new playlist after playing last item form the current one
   player.on('ended', function() {
