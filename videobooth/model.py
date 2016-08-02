@@ -22,7 +22,7 @@ class WaitingState(SessionState):
     """ waiting for button push """
     def __init__(self, model):
         super(WaitingState, self).__init__(model)
-        self.controller.set_info_text(self.model.conf['m']['start_pushbutton'])
+        self.controller.set_info_text(self.model.conf['m']['movie_idle_pushbutton'])
 
     def update(self, button_pressed):
         if button_pressed:

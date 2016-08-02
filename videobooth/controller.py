@@ -85,11 +85,8 @@ class VideoBoothController(object):
     def get_external_ip(self):
         return platform_devs.get_ip()
 
-    def set_info_text(self, text_lines, big=False, color="ffffff"):
-        if isinstance(text_lines, list):
-            text = "\\n".join(text_lines)
-        else:
-            text = text_lines
+    def set_info_text(self, text_arg, big=False, color="ffffff"):
+        text = text_arg.strip().replace("\n", "\\n")
         if big:
             self.cam.set_text(text, pt=140, layout_align="center,center", color=color)
         else:

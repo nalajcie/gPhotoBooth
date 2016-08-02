@@ -21,6 +21,9 @@ upload_session_dir:     "sesja_%d"
 upload_download_photos: "Zdjęcia do pobrania"
 
 # videobooth-specific
+movie_idle_pushbutton: |
+    Naciśnij przycisk
+    aby nagrać film
 error_camera_rec_stop: |
     Błąd kamery
     Film nie został zapisany

@@ -16,6 +16,11 @@ print_session_no:   "Session no: %d"
 upload_session_title:   "Session %d"
 upload_session_dir:     "session_%d"
 upload_download_photos: "Download full-res photos"
+
+# videobooth-specific
+movie_idle_pushbutton: |
+    Push the button
+    to record the movie
 movie_finish_text:      "End of recording"
 error_camera_rec_stop: |
     Camera error
