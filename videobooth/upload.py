@@ -109,9 +109,10 @@ class UploadProxy(object):
             start = time.time()
 
             # (1) convert mpeg-ts to MP4:
-            (filename, ext) = os.path.splitext(filepath)
+            (tmp_filepath, ext) = os.path.splitext(filepath)
             if ext == ".ts":
-                new_filepath = filename + ".mp4"
+                (_, filename) = os.path.split(tmp_filepath)
+                new_filepath = os.path.join(self.conf['picam']['archive_dir'], filename + ".mp4")
                 cmd = ['ffmpeg', '-i', filepath, '-c:v', 'copy', '-c:a', 'copy', '-bsf:a', 'aac_adtstoasc', new_filepath]
                 logger.debug("CONVERT CMD: %s", cmd)
                 subprocess.call(cmd)
@@ -128,7 +129,6 @@ class UploadProxy(object):
                 logging.warn("not upolading file: %s -> empty post url", upload_url)
                 # TODO: retry creating post url?
                 continue
-
 
             # (2) upload
             try:

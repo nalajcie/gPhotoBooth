@@ -18,9 +18,14 @@ class PiCam(object):
         # shortcuts
         self.hooks_dir = os.path.join(self.conf['picam']['workdir'], "hooks")
         self.state_dir = os.path.join(self.conf['picam']['workdir'], "state")
+        self.tmp_archive_dir = os.path.join(self.conf['picam']['workdir'], "rec/archive")
 
 
     def start(self):
+        """ setting up necessary dirs for picam and spawning picam process
+        NOTE: we're creating 'archive' dir also in tmpfs because
+        we're converting .ts files to final .mp4 by ourselfs
+        """
         # setup dirs
         if not os.path.exists(self.conf['picam']['workdir']):
             os.makedirs(self.conf['picam']['workdir'])
@@ -38,10 +43,8 @@ class PiCam(object):
                 os.remove(symname)
             os.symlink(realdir, symname)
 
-        archive_symname = os.path.join(self.conf['picam']['workdir'], "rec/archive")
-        if os.path.lexists(archive_symname):
-            os.remove(archive_symname)
-        os.symlink(self.conf['picam']['archive_dir'], archive_symname)
+        if not os.path.exists(self.tmp_archive_dir):
+            os.makedirs(self.tmp_archive_dir)
 
         # prepare command line
         args = [ self.conf['picam']['binary'] ]
@@ -114,4 +117,4 @@ class PiCam(object):
         with io.open(dest_file, "r") as f:
             f_path = f.read()
 
-        return os.path.join(self.conf['picam']['archive_dir'], os.path.split(f_path)[1])
+        return os.path.join(self.tmp_archive_dir, os.path.split(f_path)[1])
