@@ -14,13 +14,18 @@ logger = logging.getLogger('videobooth.%s' % __name__)
 class UploadProxy(object):
     def __init__(self, config):
         self.conf = config
+        self.is_running = False
+
+        # file encoding + upload file thread
+        self.process_req = Queue(maxsize=0)
+        self.thread_process = Thread(target=self.process_worker)
+        self.thread_process.setDaemon(True)
 
         if not self.conf['upload']['enabled']:
             return
+
         if self.conf['upload']['debug']:
             self.enable_debug()
-
-        self.is_running = False
 
         # create post thread
         self.create_req = Queue(maxsize=8)
@@ -28,10 +33,6 @@ class UploadProxy(object):
         self.thread_create = Thread(target=self.create_worker)
         self.thread_create.setDaemon(True)
 
-        # upload file thread
-        self.process_req = Queue(maxsize=0)
-        self.thread_process = Thread(target=self.process_worker)
-        self.thread_process.setDaemon(True)
 
     def enable_debug(self):
         import httplib as http_client
@@ -41,12 +42,10 @@ class UploadProxy(object):
         requests_log.propagate = True
 
     def start(self):
-        if not self.conf['upload']['enabled']:
-            return
-
         self.is_running = True
-        self.thread_create.start()
         self.thread_process.start()
+        if self.conf['upload']['enabled']:
+            self.thread_create.start()
 
     def async_create_post(self, mov_suffix):
         if not self.conf['upload']['enabled']:
@@ -56,7 +55,7 @@ class UploadProxy(object):
 
     def async_create_post_result(self):
         if not self.conf['upload']['enabled']:
-            return ""
+            return ("", "")
 
         try:
             return self.create_resp.get_nowait()
