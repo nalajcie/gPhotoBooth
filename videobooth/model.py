@@ -1,5 +1,6 @@
 # encoding: utf-8
 import time
+import math
 
 import logging
 logger = logging.getLogger('videobooth.%s' % __name__)
@@ -125,11 +126,19 @@ class FinishMovieState(TimedState):
         self.controller.stop_recording()
         self.recording_finished = False
         self.stop_rec_time = time.time()
-
-        self.controller.set_info_text(self.model.conf['m']['movie_finish_text'])
         self.controller.lights.pause()
 
+        # get correct ending message
+        is_upload_possible = create_post_res is not None and len(create_post_res[0]) > 0
+        if is_upload_possible:
+            self.text_arr = self.model.conf['m']['movie_finish_text'].strip().split("\n")
+        else:
+            self.text_arr = self.model.conf['m']['movie_finish_text_no_upload'].strip().split("\n")
+        self.single_text_duration = float(self.duration) / len(self.text_arr)
+
     def update(self, button_pressed):
+        self.update_text()
+
         if not self.recording_finished:
             self.recording_finished = self.controller.check_recording_state(self.create_post_res)
             if self.recording_finished: # for DEBUG
@@ -137,11 +146,32 @@ class FinishMovieState(TimedState):
 
         if self.time_up():
             if not self.recording_finished:
-                logger.warn("THE RECORDING HAS NOT BEEN FINISHED: what now?")
-                #TODO
+                logger.warn("THE RECORDING HAS NOT BEEN FINISHED: display error")
+                return ErrorState(self.model.conf['m']['error_camera_rec_stop'])
             return WaitingState(self.model)
         return self
 
+    def update_text(self):
+        """ updating funny text in the textarea """
+        time_remaining = self.timer - time.time()
+        if time_remaining <= 0:
+            return
+
+        idx = int(math.ceil(time_remaining / self.single_text_duration))
+        self.controller.set_info_text(self.text_arr[-idx])
+
+
+class ErrorState(TimedState):
+    """ in case we've encountered some error, additionally notify the end-user """
+    def __init__(self, model, text):
+        super(ErrorState, self).__init__(model, model.conf['control']['error_info_secs'])
+        self.model.set_info_text(text, color="ff0000")
+
+    def update(self, button_pressed):
+        if self.time_up():
+            return WaitingState(self.model)
+        else:
+            return self
 
 class VideoBoothModel(object):
     """

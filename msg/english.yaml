@@ -17,3 +17,17 @@ upload_session_title:   "Session %d"
 upload_session_dir:     "session_%d"
 upload_download_photos: "Download full-res photos"
 movie_finish_text:      "End of recording"
+error_camera_rec_stop: |
+    Camera error
+    Movie was not saved
+    Try again
+movie_finish_text: |
+    End of recording
+    Encoding
+    Uploading movie
+    Retrieve coupon
+
+movie_finish_text_no_upload: |
+    End of recording
+    No internet connection
+    Call support

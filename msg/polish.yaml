@@ -19,4 +19,19 @@ print_session_no:       "Sesja nr: %d"
 upload_session_title:   "Sesja %d"
 upload_session_dir:     "sesja_%d"
 upload_download_photos: "Zdjęcia do pobrania"
-movie_finish_text:      "Koniec nagrywania"
+
+# videobooth-specific
+error_camera_rec_stop: |
+    Błąd kamery
+    Film nie został zapisany
+    Spróbuj jeszcze raz
+movie_finish_text: |
+    Koniec nagrywania
+    Enkodowanie
+    Przesyłanie filmu
+    Odbierz paragon
+
+movie_finish_text_no_upload: |
+    Koniec nagrywania
+    Brak połączenia z internetem
+    Zgłoś się do operatora
