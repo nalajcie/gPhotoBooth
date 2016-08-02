@@ -57,7 +57,10 @@ class PiCam(object):
 
     def stop(self):
         if self.proc:
-            self.proc.terminate()
+            try:
+                self.proc.terminate()
+            except OSError:
+                logger.exception("Failed to stop picam")
 
     def update(self):
         """ just checking if the underlaying process is alive """
