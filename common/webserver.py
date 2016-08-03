@@ -5,6 +5,8 @@ import os
 import json
 import operator
 import subprocess
+import time
+from datetime import date, timedelta
 
 
 
@@ -75,6 +77,19 @@ class SystemControlResource(resource.Resource):
         else:
             return "ERROR - unknown req '%s'" % req
 
+class FileCached(static.File):
+    EXPIRES = 360 # file expiry date in days
+
+    def render(self, request):
+        # set caching headers for mp4 files
+        if request.uri.endswith(".mp4"):
+            expiry = (date.today() + timedelta(self.EXPIRES)).timetuple()
+            request.responseHeaders.setRawHeaders("expires" , [time.strftime("%a, %d-%b-%Y %T GMT", time.gmtime(time.mktime(expiry)))])
+            cache_control = "max-age=" + str(int(60*60*24*self.EXPIRES)) + ", public"
+            request.responseHeaders.setRawHeaders("cache-control", [cache_control])
+
+        return super(FileCached, self).render(request)
+
 
 def serve(conf):
     """ main server function - never returns """
@@ -82,7 +97,7 @@ def serve(conf):
     port = conf['webserver']['port']
 
     root = static.File("web")
-    root.putChild("mov", static.File(conf['picam']['archive_dir']))
+    root.putChild("mov", FileCached(conf['picam']['archive_dir']))
 
     playlistRes = PlaylistResource(conf['picam']['archive_dir'],
             conf['webserver']['last_videos_count'],
