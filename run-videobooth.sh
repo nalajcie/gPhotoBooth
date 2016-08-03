@@ -3,11 +3,12 @@
 
 cd /home/pi/src/gPhotoBooth/
 while :; do
-    sudo python ./videobooth.py events/video_test
+    sudo python ./videobooth.py events/video_ironman
     EXIT_CODE=$?
     # shoo, zombie processes
     sudo killall python
     sudo killall picam
+    sudo killall picam.stripped
     if [ $EXIT_CODE -eq 0 ]; then
         echo "Exited normally, ending loop";
         break;
