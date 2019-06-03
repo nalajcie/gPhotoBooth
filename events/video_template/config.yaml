@@ -17,6 +17,7 @@ picam:
 # controller-related vars
 control:
     get_ip_retries_cnt:         10 # getting IP at startup
+    static_ip_fallback:         "192.168.44.99"   # only for displaying, you have to setup it yourself
     booth_init_secs:            6
     initial_countdown_secs:     3
     movie_length_secs:          15

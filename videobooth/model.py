@@ -55,7 +55,7 @@ class InitState(TimedState):
     def __init__(self, model):
         super(InitState, self).__init__(model, model.conf['control']['booth_init_secs'])
 
-        self.ext_ip = self.controller.get_external_ip() or "UNKNOWN"
+        self.ext_ip = self.controller.get_external_ip() or model.conf['control']['static_ip_fallback']
         self.ext_ip_shown = False
 
     def update(self, button_pressed):
@@ -158,7 +158,7 @@ class FinishMovieState(TimedState):
             return
 
         idx = int(math.ceil(time_remaining / self.single_text_duration))
-        self.controller.set_info_text(self.text_arr[-idx])
+        self.controller.set_info_text(self.text_arr[-idx], big=(idx == 1))
 
 
 class ErrorState(TimedState):
