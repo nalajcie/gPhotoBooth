@@ -5,9 +5,10 @@ import multiprocessing
 import time
 import pygame
 import sys
+import random
 
 import logging
-logger = logging.getLogger('common.%s' % __name__)
+logger = logging.getLogger('%s' % __name__)
 
 class PrinterProxy(object):
     """ setups printer thread and communications with it """
@@ -135,7 +136,12 @@ class ThermalPrinter(AbstractPrinter):
                 self.conf['printer']['thermal']['baudrate'],
                 **self.conf['printer']['thermal']['kwargs']
         )
-        self.logo = Image.open(self.conf['printer']['logo'])
+        self.logos = []
+        if isinstance(self.conf['printer']['logo'], str):
+            self.conf['printer']['logo'] = [self.conf['printer']['logo']]
+
+        for logo_path in self.conf['printer']['logo']:
+            self.logos.append(Image.open(logo_path))
 
     def print_image(self, img_obj):
         logger.info("ThermalPrinter: printing image")
@@ -168,15 +174,18 @@ class ThermalPrinter(AbstractPrinter):
         # (0) wake the printer
         self.printer.wake()
 
-        # (1) print logo as RAW IMAGE
-        self.printer.printImage(self.logo, False)
+        # (1) print logo as RAW IMAGE - choose random logo if more than 1 supplied
+        logo = self.logos[random.randint(0, len(self.logos) - 1)]
+
+        self.printer.printImage(logo, False)
         #self.printer.feed(1)
 
         # (2) add header text
         self.printer.justify('C')
         if 'name' in self.conf['printer']:
             self.printer.setSize('L')
-            self.println(self.conf['printer']['name'])
+            for line in self.conf['printer']['name'].strip().split('\n'):
+                self.println(line)
             self.printer.setSize('s')
         if 'url' in self.conf['printer'] and len(self.conf['printer']['url']) > 0:
             self.println(self.conf['printer']['url'])
@@ -192,7 +201,9 @@ class ThermalPrinter(AbstractPrinter):
         if self.conf['printer']['print_all_imgs']:
             for img in sess_imgs:
                 self.print_image(img)
-
+        elif self.conf['printer']['print_last_img_cnt']:
+            for img in sess_imgs[- self.conf['printer']['print_last_img_cnt']:]:
+                self.print_image(img)
         else:
             # we're printing only the last image, because the printer heats too much and darkens the images
             self.print_image(sess_imgs[3])
@@ -203,7 +214,8 @@ class ThermalPrinter(AbstractPrinter):
         self.printer.feed(1)
 
         # (4) add some final text
-        self.println(time.strftime("%Y-%m-%d %H:%M:%S"))
+        if self.conf['printer']['print_date']:
+            self.println(time.strftime("%Y-%m-%d %H:%M:%S"))
         self.println(self.conf['m']['print_session_no'] % sess_id)
 
         # (5) add 'end_text' if provided

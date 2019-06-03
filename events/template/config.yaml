@@ -24,6 +24,8 @@ printer:
     url: http://example.com/
     end_text: ""
     print_all_imgs: false       # if true, extend montage_display_secs to 12-15
+    print_last_img_cnt: 1       # how many last images to print
+    print_date: True            # disable if there would be no access to NTP server
 
     # thermal printer specifications
     thermal:
