@@ -5,7 +5,7 @@ from StringIO import StringIO
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from local_modules import piggyphoto
+from local_modules.piggyphoto import piggyphoto
 
 MAX_FPS=30
 
