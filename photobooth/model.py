@@ -207,6 +207,15 @@ class FinishedSessionModel(object):
     def get_full_img_paths(self):
         return [self.booth_model.get_image_name(self.id, photo_no, 'full') for photo_no in xrange(1, 5)]
 
+    def load_medium_images(self):
+        for img_name in self.get_medium_img_paths():
+            try:
+                img = self.booth_model.controller.load_captured_image(img_name)
+                self.medium_img_list.append(img)
+            except Exception, e:
+                logger.info("failed to load file %s" % img_name)
+                raise ValueError # error while opening/reading file, incomplete photo session
+
     @classmethod
     def from_dir(cls, booth_model, sess_id, conf):
         """ trying to create FinishedSession from directory """
@@ -219,7 +228,7 @@ class FinishedSessionModel(object):
             except Exception:
                 raise ValueError # error while opening/reading file, incomplete photo session
 
-        return cls(booth_model, sess_id, img_list, None, conf['random_tags']) # do not care about medium images
+        return cls(booth_model, sess_id, img_list, [], conf['random_tags']) # do not care about medium images
 
 
 class PhotoBoothModel(object):
@@ -249,6 +258,11 @@ class PhotoBoothModel(object):
                 if sess_id:
                     try:
                         sess = FinishedSessionModel.from_dir(self, sess_id, self.conf)
+                        if 'print_sess' in self.conf['debug'] and sess_id == self.conf['debug']['print_sess']:
+                            logger.info("printing session %d" % sess_id)
+                            sess.load_medium_images()
+                            self.controller.notify_finished_session(sess)
+
                         all_sessions.append(sess)
                         is_uploaded = os.path.exists(get_stamp_filename(path + "/"))
                         if not is_uploaded:

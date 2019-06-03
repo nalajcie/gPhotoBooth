@@ -40,7 +40,11 @@ def parse_args():
     parser.add_argument("-f", "--fullscreen", help="Force fullscreen mode", action="store_true")
     parser.add_argument("-u", "--upload", help="Force images upload to Tumblr", action="store_true")
     parser.add_argument("-s", "--setup", help="Use this mode to setup the camera", action="store_true")
+    parser.add_argument("-p", "--print", help="Print given session ID", dest="print_sess", type=int)
     args = parser.parse_args()
+
+    if not args.event_dir:
+        exit(1)
 
     conf = config.read_config(args.event_dir)
 
@@ -56,6 +60,9 @@ def parse_args():
     if args.setup:
         conf['control']['idle_secs'] = 360
         conf['devices']['lights_default'] = conf['devices']['lights_full']
+
+    if args.print_sess:
+        conf['debug']['print_sess'] = args.print_sess
 
     return conf
 
